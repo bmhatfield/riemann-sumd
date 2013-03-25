@@ -1,5 +1,82 @@
 #!/usr/bin/env python
 
+# Add cwd-relative lib to path
+import sys
+sys.path.append("lib")
+
+# Just for sleep!
+import time
+
+# Import logging
+import logging
+
 # Daemonizing library - implements unix daemon functionality nicely
 # http://pypi.python.org/pypi/python-daemon/
 import daemon
+
+# Riemann client library, depends on protobufs
+# https://github.com/banjiewen/bernhard
+import bernhard
+
+# Task creation library
+import task
+
+# Scheduling library
+import scheduler
+
+# Task sending library
+import sender
+
+# Import queueing library
+import Queue
+
+# Import threading library to manage threads
+import threading
+
+# Import option parser
+from optparse import OptionParser
+
+parser = OptionParser()
+parser.add_option("--riemann-host", dest="riemann_host", default="localhost", help="Host that Riemann is running on")
+parser.add_option("--riemann-port", dest="riemann_port", default=5555, help="Port that Riemann is running on")
+parser.add_option("--task-limit", dest="task_limit", default=25, help="Limit of concurrent tasks running")
+parser.add_option("--worker-limit", dest="worker_limit", default=5, help="Limit of concurrent event sending worker threads running")
+parser.add_option("--dev-mode", dest="dev_mode", action='store_true', default=False, help="Enable development mode")
+(options, args) = parser.parse_args()
+
+console = logging.StreamHandler()
+console.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+log = logging.getLogger()
+log.setLevel(logging.DEBUG)
+log.addHandler(console)
+
+schedule = scheduler.TaskSchedule()
+tasks = Queue.Queue(options.task_limit)
+riemann = bernhard.Client(host=options.riemann_host, port=options.riemann_port)
+
+# TODO: Load configurations
+#	- overall config
+#	- task configs (.d)
+#	- tag configs (.d)
+#	- schedule initial tasks
+
+workers = []
+enable_threads = threading.Event()
+enable_threads.set()
+for i in range(options.worker_limit):
+	worker = sender.EventSender(tasks, riemann, enable_threads)
+	worker.start()
+	workers.append(worker)
+
+while True:
+	try:
+		while schedule.waiting() > 0:
+			task, deadline = schedule.next()
+
+			task.start()
+			tasks.put(task, block=True)
+			schedule.add(task)
+		else:
+			time.sleep(1)
+	except KeyboardInterrupt:
+		enable_threads.clear()
