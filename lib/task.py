@@ -12,7 +12,10 @@ class Task():
 		self.use_shell = shell
 
 	def run(self):
-		self.process = subprocess.Popen(self.command, stdout=subprocess.PIPE)
+		self.process = subprocess.Popen(self.command, stdout=subprocess.PIPE, shell=self.use_shell)
+
+	def start(self):
+		self.run()
 
 	def result(self):
 		stdout, sterr = self.process.communicate()
