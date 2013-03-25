@@ -1,0 +1,5 @@
+#!/usr/bin/env python
+
+# Daemonizing library - implements unix daemon functionality nicely
+# http://pypi.python.org/pypi/python-daemon/
+import daemon
