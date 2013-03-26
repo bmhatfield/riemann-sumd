@@ -8,13 +8,13 @@ class Events():
 	def __init__(self):
 		self.events = []
 
-	def add(self, service, state, description, ttl, tags=None, metric=None, hostname=socket.gethostname()):
+	def add(self, service, state, description, ttl, tags=None, metric=None, host=socket.gethostname()):
 		event = {}
 		event['service'] = service
 		event['state'] = state
 		event['description'] = description
 		event['ttl'] = ttl
-		event['hostname'] = hostname
+		event['host'] = host
 		
 		if tags is not None:
 			event['tags'] = tags
