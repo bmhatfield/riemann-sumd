@@ -8,13 +8,13 @@ class TaskSchedule():
 		self.tasks = []
 		log.debug("TaskSchedule created")
 
-	def add(self, task, ttl_skew=0.8):
+	def add(self, task, ttl_skew=0.5):
 		offset = ((ttl_skew * task.ttl) - task.skew())
 
 		log.info("Scheduling '%s' for %ss from now" % (task.name, offset))
 
-		if task.skew() > (task.ttl * 0.5):
-			log.warning("Task skew of %s is > 50%% of TTL(%s) for '%s'" % (task.skew(), task.ttl, task.name))
+		if task.skew() > (task.ttl * ttl_skew):
+			log.warning("Task skew of %s is > %s%% of TTL(%s) for '%s'" % (task.skew(), (ttl_skew*100), task.ttl, task.name))
 		else:
 			log.debug("Task skew for '%s' is %s" % ( task.name, task.skew()))
 
