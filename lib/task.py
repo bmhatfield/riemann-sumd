@@ -25,6 +25,12 @@ class Task():
 		self.tags = []
 		self.timings = [1]
 
+	def add_tags(self, tags):
+		if type(tags) == type(str()):
+			self.tags.append(tags)
+		elif type(tags) == type(list()):
+			self.tags.extend(tags)
+
 	def add_timing(self, value, limit=5):
 		log.debug("Task %s took %ss" % (self.name, value))
 		self.timings.append(value)
