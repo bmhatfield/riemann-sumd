@@ -56,8 +56,12 @@ parser.add_option("--dev-mode", dest="dev_mode", action='store_true', default=Fa
 console = logging.StreamHandler()
 console.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
 log = logging.getLogger()
-log.setLevel(logging.INFO)
 log.addHandler(console)
+
+if options.dev_mode:
+	log.setLevel(logging.DEBUG)
+else:
+	log.setLevel(logging.INFO)
 
 # Load and schedule tasks
 schedule = scheduler.TaskSchedule()
@@ -78,12 +82,14 @@ enable_threads.set()
 # Create riemann client
 riemann = bernhard.Client(host=options.riemann_host, port=options.riemann_port)
 
+# Create worker pool
 workers = []
 for i in range(options.worker_limit):
 	worker = sender.EventSender(tasks, riemann, enable_threads)
 	worker.start()
 	workers.append(worker)
 
+# Run main program loop
 while True:
 	try:
 		while schedule.waiting() > 0:
