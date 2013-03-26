@@ -1,0 +1,5 @@
+service: "state-changer"
+arg: 'bash -c "exit $((RANDOM % 4))"'
+ttl: 30
+tags: ['directories', 'no-page']
+type: "nagios"
