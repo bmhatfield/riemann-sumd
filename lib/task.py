@@ -103,7 +103,7 @@ class NagiosTask(Task):
 	exitcodes = {
 		0: 'ok',
 		1: 'warn',
-		2: 'error',
+		2: 'critical',
 		3: 'unknown'
 	}
 
