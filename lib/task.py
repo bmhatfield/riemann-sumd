@@ -26,6 +26,7 @@ class Task():
 		self.timings = [0]
 
 	def add_timing(self, value, limit=5):
+		log.debug("Task %s took %ss" % (self.name, value))
 		self.timings.append(value)
 		del self.timings[:-limit]
 
@@ -33,7 +34,7 @@ class Task():
 		return sum(self.timings)/len(self.timings)
 
 	def start(self):
-		log.info("Starting task: '%s' with TTL of %ss" % (self.name, self.ttl))
+		log.debug("Starting task: '%s' with TTL of %ss" % (self.name, self.ttl))
 		self.start_time = time.time()
 		self.run()
 
