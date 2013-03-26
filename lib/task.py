@@ -76,7 +76,7 @@ class CloudKickTask(Task):
 			log.debug("Starting web request to '%s'" % (url))
 			resp = requests.get(url)
 			q.put(resp.json(), timeout=self.skew() * 2)
-		except:
+		except Exception as e:
 			log.error("Exception during request method of CloudKickTask '%s'\n%s" % (self.name, str(e)))
 
 	def run(self):
@@ -99,7 +99,8 @@ class CloudKickTask(Task):
 					state=metric['state'],
 					metric=metric['value'],
 					description="Warn threshold: %s, Error threshold: %s" % (metric['warn_threshold'], metric['error_threshold']),
-					ttl=self.ttl
+					ttl=self.ttl,
+					tags=self.tags
 				)
 		except Exception as e:
 			log.error("Exception joining CloudKickTask '%s'\n%s" % (self.name, str(e)))
