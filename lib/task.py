@@ -20,7 +20,7 @@ class Task():
 		self.tags = []
 
 	def start(self):
-		log.info("Starting task: '%s' with TTL of %ss" % (name, ttl))
+		log.info("Starting task: '%s' with TTL of %ss" % (self.name, self.ttl))
 		self.run()
 
 	def get_events(self):
