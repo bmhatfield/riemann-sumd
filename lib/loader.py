@@ -21,6 +21,7 @@ class Loader():
 				log.debug('YAML Parsing: %s' % (f))
 				self.configs.append(yaml.safe_load(yf.read()))
 
+
 class TaskLoader(Loader):
 	task_types = {
 		'nagios': task.NagiosTask,
@@ -32,11 +33,17 @@ class TaskLoader(Loader):
 		Loader.__init__(self, path, pattern)
 		self.parse()
 
-	def schedule_tasks(self, scheduler):
+	def create_tasks(self, scheduler, generic_tags):
 		for task in self.configs:
 			if task['type'] in self.task_types:
 				t = self.task_types[task['type']](name=task['service'], ttl=task['ttl'], arg=task['arg'])
+
+				t.add_tags(generic_tags)
+				if 'tags' in task:
+					t.add_tags(task['tags'])
+				
 				scheduler.add(t)
+
 
 class TagLoader(Loader):
 	def __init__(self, path, pattern):

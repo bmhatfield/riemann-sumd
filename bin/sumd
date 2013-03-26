@@ -63,16 +63,16 @@ if options.dev_mode:
 else:
 	log.setLevel(logging.INFO)
 
-# Load and schedule tasks
-schedule = scheduler.TaskSchedule()
-task_configs = loader.TaskLoader("examples/etc/sumd/tasks.d", "*.task")
-task_configs.schedule_tasks(schedule)
-
 # Load and add tags
 generic_tags = []
 tag_configs = loader.TagLoader("examples/etc/sumd/tags.d", "*.tag")
 tag_configs.add_tags(generic_tags)
 log.info("Generic Tags: %s" % (generic_tags))
+
+# Load and schedule tasks
+schedule = scheduler.TaskSchedule()
+task_configs = loader.TaskLoader("examples/etc/sumd/tasks.d", "*.task")
+task_configs.create_tasks(schedule, generic_tags)
 
 # Create task queue for worker threads, enable thread processing
 tasks = Queue.Queue(options.task_limit)
