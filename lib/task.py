@@ -11,6 +11,8 @@ import shlex
 # Multiprocessing, for PythonTask
 import multiprocessing
 
+import time
+
 class Task():
 	def __init__(self, name, ttl):
 		log.info("Creating task: '%s' with TTL of %ss" % (name, ttl))
@@ -18,13 +20,24 @@ class Task():
 		self.name = name
 		self.ttl = ttl
 		self.tags = []
+		self.timings = [0]
+
+	def add_timing(self, value, limit=5):
+		self.timings.append(value)
+		del self.timings[:-limit]
+
+	def skew(self):
+		return sum(self.timings)/len(self.timings)
 
 	def start(self):
 		log.info("Starting task: '%s' with TTL of %ss" % (self.name, self.ttl))
+		self.start_time = time.time()
 		self.run()
 
 	def get_events(self):
 		self.join()
+		self.end_time = time.time()
+		self.add_timing(self.end_time - self.start_time)
 
 		return self.events
 
