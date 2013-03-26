@@ -91,5 +91,8 @@ while True:
 			schedule.add(task)
 		else:
 			time.sleep(1)
-	except KeyboardInterrupt:
+	except KeyboardInterrupt, SystemExit:
+		for i in range(len(workers)):
+			tasks.put("exit")
 		enable_threads.clear()
+		break

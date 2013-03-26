@@ -1,6 +1,8 @@
 # Import queueing library
 import threading
 
+import time
+
 import logging
 log = logging.getLogger(__name__)
 
@@ -16,6 +18,11 @@ class EventSender(threading.Thread):
 		while self.enable_threads:
 			log.info("%s: waiting for events to send..." % (self.name))
 			task = self.queue.get(block=True)
+
+			if task == "exit":
+				log.info("%s: received 'exit' event" % (self.name))
+				break
+
 			events = task.get_events()
 			events.send(self.riemann)
 			self.queue.task_done()
