@@ -42,5 +42,9 @@ class TagLoader(Loader):
 		Loader.__init__(self, path, pattern)
 		self.parse()
 
-	def add_tags(self):
-		pass
+	def add_tags(self, tags):
+		for tag in self.configs:
+			if type(tag['tag']) == type(str()):
+				tags.append(tag['tag'])
+			elif type(tag['tag']) == type(list()):
+				tags.extend(tag['tag'])
