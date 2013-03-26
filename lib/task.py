@@ -11,6 +11,9 @@ import shlex
 # Multiprocessing, for PythonTask
 import multiprocessing
 
+# Requests, for JSONWebTask
+import requests
+
 import time
 
 class Task():
@@ -43,15 +46,48 @@ class Task():
 
 
 class PythonTask(Task):
-	def __init__(self, name, ttl, module):
+	def __init__(self, name, ttl, arg):
 		Task.__init__(self, name, ttl)
-		self.module = module
+		self.module = arg
 
 	def run(self):
+		# TODO: Not yet built. Needs dynamic module/class loading
 		pass
 
 	def join(self):
 		self.events.add(service=self.name, state=state, description=description, ttl=self.ttl, tags=self.tags)
+
+
+class JSONWebTask(Task):
+	def __init__(self, name, ttl, arg):
+		Task.__init__(self, name, ttl)
+		self.url = arg
+
+	def request(self, url, q):
+		log.debug("Starting web request to '%s'" % (url))
+		resp = requests.get(url)
+		log.debug("Response: %s" % (resp))
+		q.put(resp.json())
+
+	def run(self):
+		self.q = multiprocessing.Queue()
+		self.proc = multiprocessing.Process(target=self.request, args=(self.url, self.q))
+		self.proc.start()
+
+	def join(self):
+		log.info('JSONWebTask: reading queue...')
+		json_result = self.q.get()
+
+		log.info('JSONWebTask: Joining process...')
+		self.proc.join()
+
+		log.info('JSONWebTask: Processing events...')
+		for metric in json_result['metrics']:
+			self.events.add(service=metric['name'],
+				state=metric['state'],
+				metric=metric['value'],
+				description="",
+				ttl=self.ttl)
 
 
 class NagiosTask(Task):
@@ -62,10 +98,10 @@ class NagiosTask(Task):
 		3: 'unknown'
 	}
 
-	def __init__(self, name, ttl, command, shell=False):
+	def __init__(self, name, ttl, arg, shell=False):
 		Task.__init__(self, name, ttl)
-		self.raw_command = command
-		self.command = shlex.split(command)
+		self.raw_command = arg
+		self.command = shlex.split(arg)
 		self.use_shell = shell
 
 	def run(self):
