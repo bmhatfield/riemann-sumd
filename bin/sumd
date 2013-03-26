@@ -80,7 +80,7 @@ enable_threads = threading.Event()
 enable_threads.set()
 
 # Create riemann client
-riemann = bernhard.Client(host=options.riemann_host, port=options.riemann_port)
+riemann = bernhard.Client(host=options.riemann_host, port=options.riemann_port, transport=bernhard.UDPTransport)
 
 # Create worker pool
 workers = []
