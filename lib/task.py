@@ -11,7 +11,7 @@ import shlex
 # Multiprocessing, for PythonTask
 import multiprocessing
 
-# Requests, for JSONWebTask
+# Requests, for CloudKickTask
 import requests
 
 import time
@@ -23,7 +23,7 @@ class Task():
 		self.name = name
 		self.ttl = ttl
 		self.tags = []
-		self.timings = [0]
+		self.timings = [1]
 
 	def add_timing(self, value, limit=5):
 		log.debug("Task %s took %ss" % (self.name, value))
@@ -56,35 +56,47 @@ class PythonTask(Task):
 		pass
 
 	def join(self):
-		self.events.add(service=self.name, state=state, description=description, ttl=self.ttl, tags=self.tags)
+		#self.events.add(service=self.name, state=state, description=description, ttl=self.ttl, tags=self.tags)
+		pass
 
 
-class JSONWebTask(Task):
+class CloudKickTask(Task):
 	def __init__(self, name, ttl, arg):
 		Task.__init__(self, name, ttl)
 		self.url = arg
 
 	def request(self, url, q):
-		log.debug("Starting web request to '%s'" % (url))
-		resp = requests.get(url)
-		q.put(resp.json())
+		try:
+			log.debug("Starting web request to '%s'" % (url))
+			resp = requests.get(url)
+			q.put(resp.json(), timeout=self.skew() * 2)
+		except:
+			log.error("Exception during request method of CloudKickTask '%s'\n%s" % (self.name, str(e)))
 
 	def run(self):
-		self.q = multiprocessing.Queue()
-		self.proc = multiprocessing.Process(target=self.request, args=(self.url, self.q))
-		self.proc.start()
+		try:
+			self.q = multiprocessing.Queue()
+			self.proc = multiprocessing.Process(target=self.request, args=(self.url, self.q))
+			self.proc.start()
+		except Exception as e:
+			log.error("Exception starting CloudKickTask '%s'\n%s" % (self.name, str(e)))
 
 	def join(self):
-		json_result = self.q.get()
-		self.proc.join()
+		try:
+			json_result = self.q.get(timeout=self.skew() * 2)
+			self.proc.join()
 
-		log.debug('JSONWebTask: Processing %s metrics' % (len(json_result['metrics'])))
-		for metric in json_result['metrics']:
-			self.events.add(service=metric['name'],
-				state=metric['state'],
-				metric=metric['value'],
-				description="",
-				ttl=self.ttl)
+			log.debug('CloudKickTask: Processing %s metrics' % (len(json_result['metrics'])))
+			for metric in json_result['metrics']:
+				self.events.add(
+					service=metric['name'],
+					state=metric['state'],
+					metric=metric['value'],
+					description="Warn threshold: %s, Error threshold: %s" % (metric['warn_threshold'], metric['error_threshold']),
+					ttl=self.ttl
+				)
+		except Exception as e:
+			log.error("Exception joining CloudKickTask '%s'\n%s" % (self.name, str(e)))
 
 
 class NagiosTask(Task):
@@ -108,13 +120,16 @@ class NagiosTask(Task):
 			log.error("Exception running task '%s':\n%s" % (self.name, str(e)))
 
 	def join(self):
-		stdout, sterr = self.process.communicate()
-		description = self.raw_command + "\n" + stdout
-		returncode = self.process.returncode
+		try:
+			stdout, sterr = self.process.communicate()
+			description = self.raw_command + "\n" + stdout
+			returncode = self.process.returncode
 
-		if returncode in self.exitcodes:
-			state = self.exitcodes[returncode]
-		else:
-			state = 'unknown'
+			if returncode in self.exitcodes:
+				state = self.exitcodes[returncode]
+			else:
+				state = 'unknown'
 
-		self.events.add(service=self.name, state=state, description=description, ttl=self.ttl, tags=self.tags)
+			self.events.add(service=self.name, state=state, description=description, ttl=self.ttl, tags=self.tags)
+		except Exception as e:
+			log.error("Exception joining task '%s':\n%s" % (self.name, str(e)))

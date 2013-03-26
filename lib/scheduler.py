@@ -8,7 +8,7 @@ class TaskSchedule():
 		self.tasks = []
 		log.debug("TaskSchedule created")
 
-	def add(self, task, ttl_skew=0.95):
+	def add(self, task, ttl_skew=0.8):
 		offset = ((ttl_skew * task.ttl) - task.skew())
 
 		log.info("Scheduling '%s' for %ss from now" % (task.name, offset))

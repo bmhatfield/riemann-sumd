@@ -25,7 +25,7 @@ class TaskLoader(Loader):
 	task_types = {
 		'nagios': task.NagiosTask,
 		'python': task.PythonTask,
-		'jsonweb': task.JSONWebTask
+		'cloudkick': task.CloudKickTask
 	}
 
 	def __init__(self, path, pattern):
