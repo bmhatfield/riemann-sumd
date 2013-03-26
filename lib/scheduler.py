@@ -16,7 +16,7 @@ class TaskSchedule():
 		if task.skew() > (task.ttl * 0.5):
 			log.warning("Task skew of %s is > 50%% of TTL(%s) for '%s'" % (task.skew(), task.ttl, task.name))
 		else:
-			log.info("Task skew for '%s' is %s" % ( task.name, task.skew()))
+			log.debug("Task skew for '%s' is %s" % ( task.name, task.skew()))
 
 		deadline = time.time() + offset
 		self.tasks.append((task, deadline))

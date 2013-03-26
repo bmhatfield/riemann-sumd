@@ -66,7 +66,6 @@ class JSONWebTask(Task):
 	def request(self, url, q):
 		log.debug("Starting web request to '%s'" % (url))
 		resp = requests.get(url)
-		log.debug("Response: %s" % (resp))
 		q.put(resp.json())
 
 	def run(self):
@@ -75,13 +74,10 @@ class JSONWebTask(Task):
 		self.proc.start()
 
 	def join(self):
-		log.info('JSONWebTask: reading queue...')
 		json_result = self.q.get()
-
-		log.info('JSONWebTask: Joining process...')
 		self.proc.join()
 
-		log.info('JSONWebTask: Processing events...')
+		log.debug('JSONWebTask: Processing %s metrics' % (len(json_result['metrics'])))
 		for metric in json_result['metrics']:
 			self.events.add(service=metric['name'],
 				state=metric['state'],
