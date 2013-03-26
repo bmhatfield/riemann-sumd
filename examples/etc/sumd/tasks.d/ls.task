@@ -1,5 +1,5 @@
 service: "Directory List"
 arg: "ls"
-ttl: 30
+ttl: 60
 tags: ['directories', 'no-page']
 type: "nagios"
