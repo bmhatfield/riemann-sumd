@@ -29,6 +29,9 @@ class Events():
 		log.debug("Sending %s events..." % (len(self.events)))
 		while len(self.events) > 0:
 			event = self.events.pop(0)
-			client.send(event)
+			try:
+				client.send(event)
+			except socket.error as e:
+				log.error("Unable to send event '%s' to %s:%s" % (event['service'], client.host, client.port))
 
 	

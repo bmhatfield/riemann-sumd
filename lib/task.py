@@ -13,12 +13,14 @@ import multiprocessing
 
 class Task():
 	def __init__(self, name, ttl):
+		log.info("Creating task: '%s' with TTL of %ss" % (name, ttl))
 		self.events = event.Events()
 		self.name = name
 		self.ttl = ttl
 		self.tags = []
 
 	def start(self):
+		log.info("Starting task: '%s' with TTL of %ss" % (name, ttl))
 		self.run()
 
 	def get_events(self):

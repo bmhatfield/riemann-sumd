@@ -10,6 +10,19 @@ import time
 # Import logging
 import logging
 
+# Import queueing library
+import Queue
+
+# Import threading library to manage threads
+import threading
+
+# Import option parser
+from optparse import OptionParser
+
+# YAML parser
+# http://pyyaml.org/wiki/PyYAML
+import yaml
+
 # Daemonizing library - implements unix daemon functionality nicely
 # http://pypi.python.org/pypi/python-daemon/
 import daemon
@@ -17,6 +30,9 @@ import daemon
 # Riemann client library, depends on protobufs
 # https://github.com/banjiewen/bernhard
 import bernhard
+
+# Task configuration loader library
+import loader
 
 # Task creation library
 import task
@@ -27,15 +43,7 @@ import scheduler
 # Task sending library
 import sender
 
-# Import queueing library
-import Queue
-
-# Import threading library to manage threads
-import threading
-
-# Import option parser
-from optparse import OptionParser
-
+# Parse command line arguments
 parser = OptionParser()
 parser.add_option("--riemann-host", dest="riemann_host", default="localhost", help="Host that Riemann is running on")
 parser.add_option("--riemann-port", dest="riemann_port", default=5555, help="Port that Riemann is running on")
@@ -44,25 +52,31 @@ parser.add_option("--worker-limit", dest="worker_limit", default=5, help="Limit 
 parser.add_option("--dev-mode", dest="dev_mode", action='store_true', default=False, help="Enable development mode")
 (options, args) = parser.parse_args()
 
+# Configure logging
 console = logging.StreamHandler()
 console.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
 log = logging.getLogger()
-log.setLevel(logging.DEBUG)
+log.setLevel(logging.INFO)
 log.addHandler(console)
 
+# Load and schedule tasks
 schedule = scheduler.TaskSchedule()
+task_configs = loader.TaskLoader("examples/etc/sumd/tasks.d", "*.task")
+task_configs.schedule_tasks(schedule)
+
+# Load and add tags
+tag_configs = loader.TagLoader("examples/etc/sumd/tags.d", "*.tag")
+tag_configs.add_tags()
+
+# Create task queue for worker threads, enable thread processing
 tasks = Queue.Queue(options.task_limit)
-riemann = bernhard.Client(host=options.riemann_host, port=options.riemann_port)
-
-# TODO: Load configurations
-#	- overall config
-#	- task configs (.d)
-#	- tag configs (.d)
-#	- schedule initial tasks
-
-workers = []
 enable_threads = threading.Event()
 enable_threads.set()
+
+# Create riemann client
+riemann = bernhard.Client(host=options.riemann_host, port=options.riemann_port)
+
+workers = []
 for i in range(options.worker_limit):
 	worker = sender.EventSender(tasks, riemann, enable_threads)
 	worker.start()
@@ -72,7 +86,6 @@ while True:
 	try:
 		while schedule.waiting() > 0:
 			task, deadline = schedule.next()
-
 			task.start()
 			tasks.put(task, block=True)
 			schedule.add(task)

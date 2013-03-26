@@ -9,19 +9,18 @@ class TaskSchedule():
 		log.debug("TaskSchedule created")
 
 	def add(self, task, ttl_skew=0.9):
-		log.debug("Scheduling %s for %ss from now" % (task.name, task.ttl))
-		deadline = time.time + (ttl_skew * task.ttl)
+		log.info("Scheduling '%s' for %ss from now" % (task.name, (ttl_skew * task.ttl)))
+		deadline = time.time() + (ttl_skew * task.ttl)
 		self.tasks.append((task, deadline))
 
 	def update(self):
-		log.debug("Sorting schedule")
+		log.debug("Updating schedule with nearest deadline last (%s items)" % (len(self.tasks)))
 		self.tasks.sort(key=lambda task: task[1], reverse=True)
 
 	def next(self):
 		task, deadline = self.tasks.pop()
-		log.debug("Providing task '%s' to caller" % (task.name))
+		log.info("Next task is '%s' with deadline of %s" % (task.name, deadline))
 		return (task, deadline)
-		
 
 	def ready(self, deadline, grace=3.0):
 		now = time.time()

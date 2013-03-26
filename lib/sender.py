@@ -14,7 +14,7 @@ class EventSender(threading.Thread):
 
 	def run(self):
 		while self.enable_threads:
-			log.debug("Checking for events to send...")
+			log.info("%s: waiting for events to send..." % (self.name))
 			task = self.queue.get(block=True)
 			events = task.get_events()
 			events.send(self.riemann)
