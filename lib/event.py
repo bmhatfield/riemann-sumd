@@ -22,8 +22,8 @@ class Events():
 		if metric is not None:
 			event['metric'] = metric
 
-		log.debug("Event added: %s" % (event))
 		self.events.append(event)
+		log.debug("Event added: %s" % (event))
 
 	def send(self, client):
 		log.debug("Sending %s events..." % (len(self.events)))
@@ -31,7 +31,7 @@ class Events():
 			event = self.events.pop(0)
 			try:
 				client.send(event)
-			except socket.error as e:
+			except socket.error:
 				log.error("Unable to send event '%s' to %s:%s" % (event['service'], client.host, client.port))
 
 	

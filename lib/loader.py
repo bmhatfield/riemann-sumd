@@ -24,7 +24,8 @@ class Loader():
 class TaskLoader(Loader):
 	task_types = {
 		'nagios': task.NagiosTask,
-		'python': task.PythonTask
+		'python': task.PythonTask,
+		'jsonweb': task.JSONWebTask
 	}
 
 	def __init__(self, path, pattern):
@@ -34,7 +35,7 @@ class TaskLoader(Loader):
 	def schedule_tasks(self, scheduler):
 		for task in self.configs:
 			if task['type'] in self.task_types:
-				t = self.task_types[task['type']](name=task['service'], ttl=task['ttl'], command=task['command'])
+				t = self.task_types[task['type']](name=task['service'], ttl=task['ttl'], arg=task['arg'])
 				scheduler.add(t)
 
 class TagLoader(Loader):

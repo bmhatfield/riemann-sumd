@@ -16,13 +16,14 @@ class EventSender(threading.Thread):
 
 	def run(self):
 		while self.enable_threads:
-			log.info("%s: waiting for events to send..." % (self.name))
+			log.debug("EventSender %s: waiting for a completed task..." % (self.name))
 			task = self.queue.get(block=True)
 
 			if task == "exit":
-				log.info("%s: received 'exit' event" % (self.name))
+				log.debug("%s: received 'exit' event" % (self.name))
 				break
 
+			log.debug("%s: Got task - %s" % (self.name, task.name))
 			events = task.get_events()
 			events.send(self.riemann)
 			self.queue.task_done()

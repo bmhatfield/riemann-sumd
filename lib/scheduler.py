@@ -22,7 +22,6 @@ class TaskSchedule():
 		self.tasks.append((task, deadline))
 
 	def update(self):
-		log.debug("Updating schedule with nearest deadline last (%s items)" % (len(self.tasks)))
 		self.tasks.sort(key=lambda task: task[1], reverse=True)
 
 	def next(self):
