@@ -1,1 +1,1 @@
-tag: ['many', 'fore', 'dyn']
+tag: ['tag-list']

@@ -1,5 +1,0 @@
-service: "Sleep"
-arg: "sleep 5"
-ttl: 60
-tags: ['sleep', 'no-page']
-type: "nagios"
