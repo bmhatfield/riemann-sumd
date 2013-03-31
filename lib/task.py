@@ -23,7 +23,7 @@ class Task():
 		self.name = name
 		self.ttl = ttl
 		self.tags = []
-		self.timings = [1]
+		self.timings = [0.75]
 
 	def add_tags(self, tags):
 		if type(tags) == type(str()):
@@ -32,7 +32,7 @@ class Task():
 			self.tags.extend(tags)
 
 	def add_timing(self, value, limit=5):
-		log.debug("Task %s took %ss" % (self.name, value))
+		log.debug("Task %s took %0.2fs" % (self.name, value))
 		self.timings.append(value)
 		del self.timings[:-limit]
 
@@ -40,7 +40,7 @@ class Task():
 		return sum(self.timings)/len(self.timings)
 
 	def start(self):
-		log.debug("Starting task: '%s' with TTL of %ss" % (self.name, self.ttl))
+		log.info("Starting task: '%s' with TTL of %0.2fs" % (self.name, self.ttl))
 		self.start_time = time.time()
 		self.run()
 
@@ -75,7 +75,7 @@ class CloudKickTask(Task):
 		try:
 			log.debug("Starting web request to '%s'" % (url))
 			resp = requests.get(url)
-			q.put(resp.json(), timeout=self.skew() * 2)
+			q.put(resp.json(), timeout=5)
 		except Exception as e:
 			log.error("Exception during request method of CloudKickTask '%s'\n%s" % (self.name, str(e)))
 
@@ -89,7 +89,7 @@ class CloudKickTask(Task):
 
 	def join(self):
 		try:
-			json_result = self.q.get(timeout=self.skew() * 2)
+			json_result = self.q.get(timeout=5)
 			self.proc.join()
 
 			log.debug('CloudKickTask: Processing %s metrics' % (len(json_result['metrics'])))

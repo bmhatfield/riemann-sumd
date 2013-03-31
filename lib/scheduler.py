@@ -8,14 +8,15 @@ class TaskSchedule():
 		self.tasks = []
 		log.debug("TaskSchedule created")
 
-	def add(self, task, ttl_skew=0.5):
-		offset = ((ttl_skew * task.ttl) - task.skew())
+	def add(self, task, max_skew_factor=0.5):
+		offset = (task.ttl - task.skew())
 		
-		log.debug("Task skew for '%s' is %s" % ( task.name, task.skew()))
-		log.info("Scheduling '%s' for %ss from now" % (task.name, offset))
+		log.debug("Task skew for '%s' is %0.2fs" % ( task.name, task.skew()))
+		log.info("Scheduling '%s' for %0.2fs from now" % (task.name, offset))
 
-		if task.skew() > (task.ttl * ttl_skew):
-			log.warning("Task skew of %s is > %s%% of TTL(%s) for '%s'" % (task.skew(), (ttl_skew*100), task.ttl, task.name))
+		if task.skew() > (task.ttl * max_skew_factor):
+			log.warning("Task skew of %0.2f is > %s%% of TTL(%s) for '%s'" % 
+				(task.skew(), (max_skew_factor * 100), task.ttl, task.name))
 
 		deadline = time.time() + offset
 		self.tasks.append((task, deadline))
@@ -25,7 +26,7 @@ class TaskSchedule():
 
 	def next(self):
 		task, deadline = self.tasks.pop()
-		log.info("Next task is '%s' scheduled to run in %ss" % (task.name, deadline-time.time()))
+		log.debug("Next task is '%s' scheduled to run in %0.2fs" % (task.name, deadline-time.time()))
 		return (task, deadline)
 
 	def ready(self, deadline, grace=1.1):
