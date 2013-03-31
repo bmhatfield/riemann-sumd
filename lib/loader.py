@@ -36,6 +36,11 @@ class TaskLoader(Loader):
 	def load_tasks(self, additional_tags=None):
 		tasks = []
 		for task in self.configs:
+			for field in ['service', 'type', 'ttl', 'arg']:
+				if not field in task:
+					log.error('Task found but missing field %s' % (field))
+					continue
+
 			if task['type'] in self.task_types:
 				t = self.task_types[task['type']](name=task['service'], ttl=task['ttl'], arg=task['arg'])
 
