@@ -17,14 +17,18 @@ from optparse import OptionParser
 # 3rd party dependencies --
 # YAML parser
 # http://pyyaml.org/wiki/PyYAML
+# Ubuntu: python-yaml
 import yaml
 
 # Daemonizing library - implements unix daemon functionality nicely
 # http://pypi.python.org/pypi/python-daemon/
+# Ubuntu: python-daemon
 import daemon
 
 # Riemann client library, depends on 'protobuf'
 # https://github.com/banjiewen/bernhard
+# Ubuntu: python-protobuf
+# Ubuntu: -does not exist-
 import bernhard
 
 # Module dependencies --

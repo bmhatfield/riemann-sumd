@@ -35,3 +35,22 @@ The configuration aims to be dead simple: in a /etc/riemann/tasks.d/ directory, 
 **type** - This maps internally to a class for running the task. Valid values are 'nagios', 'python', 'cloudkick'  
 
 Internally, the scheduler multiplies the task's TTL by 0.5x, and schedules the next event of this task to run at now + offset. When that deadline is near, the scheduler returns the task, which is then started in a subprocess and added to a queue to be examined later. A pool of worker threads pull the next already-running task off the queue, join it, wait for it to complete, and send the results to Riemann.
+
+Dependencies
+------------
+
+> YAML parser  
+> http://pyyaml.org/wiki/PyYAML  
+> Ubuntu: python-yaml  
+> import yaml  
+
+> Daemonizing library - implements unix daemon functionality nicely  
+> http://pypi.python.org/pypi/python-daemon/  
+> Ubuntu: python-daemon  
+> import daemon  
+
+> Riemann client library, depends on 'protobuf'  
+> https://github.com/banjiewen/bernhard  
+> Ubuntu: python-protobuf  
+> Ubuntu: -does not exist-  
+> import bernhard  
