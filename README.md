@@ -21,11 +21,11 @@ It's a simple daemon with the capability to perform a few different 'types' of t
 
 The configuration aims to be dead simple: in a /etc/riemann/tasks.d/ directory, create SOMETASK.task with the following YAML-style fields:
 
-> service: "state-changer"
-> arg: 'bash -c "exit $((RANDOM % 4))"'
-> ttl: 60
-> tags: ['flapper', 'notify']
-> type: "nagios"
+> service: "state-changer"  
+> arg: 'bash -c "exit $((RANDOM % 4))"'  
+> ttl: 60  
+> tags: ['flapper', 'notify']  
+> type: "nagios"  
 
 (_italicized_ means required)
 _*service*_ - Whatever you'd like to call your service
