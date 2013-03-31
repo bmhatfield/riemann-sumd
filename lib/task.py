@@ -31,16 +31,16 @@ class Task():
 		elif type(tags) == type(list()):
 			self.tags.extend(tags)
 
-	def add_timing(self, value, limit=5):
+	def add_timing(self, value, keep=5):
 		log.debug("Task %s took %0.2fs" % (self.name, value))
 		self.timings.append(value)
-		del self.timings[:-limit]
+		del self.timings[:-keep]
 
 	def skew(self):
 		return sum(self.timings)/len(self.timings)
 
 	def start(self):
-		log.info("Starting task: '%s' with TTL of %0.2fs" % (self.name, self.ttl))
+		log.info("Starting task: '%s' (usually takes %0.2fs)" % (self.name, self.skew()))
 		self.start_time = time.time()
 		self.run()
 
@@ -75,7 +75,7 @@ class CloudKickTask(Task):
 		try:
 			log.debug("Starting web request to '%s'" % (url))
 			resp = requests.get(url)
-			q.put(resp.json(), timeout=5)
+			q.put(resp.json(), timeout=(self.ttl * 0.3))
 		except Exception as e:
 			log.error("Exception during request method of CloudKickTask '%s'\n%s" % (self.name, str(e)))
 
@@ -89,7 +89,7 @@ class CloudKickTask(Task):
 
 	def join(self):
 		try:
-			json_result = self.q.get(timeout=5)
+			json_result = self.q.get(timeout=(self.ttl * 0.3))
 			self.proc.join()
 
 			log.debug('CloudKickTask: Processing %s metrics' % (len(json_result['metrics'])))
