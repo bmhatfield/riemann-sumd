@@ -53,7 +53,8 @@ parser.add_option("--worker-limit", dest="worker_limit", default=5, help="Limit 
 parser.add_option("--log-dir", dest="log_directory", default=".", help="Directory for where logs should end up")
 parser.add_option("--config-dir", dest="config_directory", default="examples/etc/sumd", help="Root path where tasks.d and tags.d can be found")
 parser.add_option("--run-dir", dest="run_directory", default=".", help="Directory for where pidfiles should be placed")
-parser.add_option("--dev-mode", dest="dev_mode", action='store_true', default=False, help="Enable development mode")
+parser.add_option("--foreground", dest="foreground", action='store_true', default=False, help="Don't daemonize.")
+parser.add_option("--debug", dest="debug", action='store_true', default=False, help="Increase logger verbosity")
 (options, args) = parser.parse_args()
 
 
@@ -110,17 +111,20 @@ def main():
     # Configure logging, must be done inside main to preserve file handling.
     log = logging.getLogger()
 
-    if options.dev_mode:
-        log_output = logging.StreamHandler()
+    if options.debug:
         log.setLevel(logging.DEBUG)
     else:
-        log_output = logging.FileHandler(os.path.join(options.log_directory, 'sumd.log'))
         log.setLevel(logging.INFO)
+
+    if options.foreground:
+        log_output = logging.StreamHandler()
+    else:
+        log_output = logging.FileHandler(os.path.join(options.log_directory, 'sumd.log'))
 
     log_output.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
     log.addHandler(log_output)
 
-    if not options.dev_mode:
+    if not options.foreground:
         log.info("Creating pidfile with PID: %s" % (pidfile(create=True)))
 
     # Create scheduler
@@ -167,7 +171,7 @@ def main():
 
 if __name__ == "__main__":
     if len(args) == 0 or 'start' in args:
-        if options.dev_mode:
+        if options.foreground:
             main()
         else:
             try:
