@@ -12,7 +12,7 @@ class TaskSchedule():
 		offset = (task.ttl - task.skew())
 		
 		log.debug("Task skew for '%s' is %0.2fs" % ( task.name, task.skew()))
-		log.info("Scheduling '%s' for %0.2fs from now" % (task.name, offset))
+		log.debug("Scheduling '%s' for %0.2fs from now" % (task.name, offset))
 
 		if task.skew() > (task.ttl * max_skew_factor):
 			log.warning("Task skew of %0.2f is > %s%% of TTL(%s) for '%s'" % 
