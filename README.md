@@ -34,4 +34,4 @@ The configuration aims to be dead simple: in a /etc/riemann/tasks.d/ directory, 
 *tags* - A single item string or a list of tags to apply to this service  
 **type** - This maps internally to a class for running the task. Valid values are 'nagios', 'python', 'cloudkick'  
 
-Internally, the scheduler multiplies the task's TTL by 0.5x, and schedules the next event of this task to run at some deadline. When that deadline is near, the scheduler returns the task, which is then started in a subprocess and added to a queue to be examined later. A pool of worker threads pull the next task off the queue, join it wherever it is, wait for it to complete, and send the results to Riemann.
+Internally, the scheduler multiplies the task's TTL by 0.5x, and schedules the next event of this task to run at now + offset. When that deadline is near, the scheduler returns the task, which is then started in a subprocess and added to a queue to be examined later. A pool of worker threads pull the next already-running task off the queue, join it, wait for it to complete, and send the results to Riemann.
