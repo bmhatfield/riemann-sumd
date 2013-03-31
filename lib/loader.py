@@ -33,16 +33,21 @@ class TaskLoader(Loader):
 		Loader.__init__(self, path, pattern)
 		self.parse()
 
-	def create_tasks(self, scheduler, generic_tags):
+	def load_tasks(self, additional_tags=None):
+		tasks = []
 		for task in self.configs:
 			if task['type'] in self.task_types:
 				t = self.task_types[task['type']](name=task['service'], ttl=task['ttl'], arg=task['arg'])
 
-				t.add_tags(generic_tags)
+				if additional_tags is not None:
+					t.add_tags(additional_tags)
+
 				if 'tags' in task:
 					t.add_tags(task['tags'])
-				
-				scheduler.add(t)
+
+				tasks.append(t)
+
+		return tasks
 
 
 class TagLoader(Loader):
@@ -50,9 +55,12 @@ class TagLoader(Loader):
 		Loader.__init__(self, path, pattern)
 		self.parse()
 
-	def add_tags(self, tags):
+	def load_tags(self):
+		tags = []
 		for tag in self.configs:
 			if type(tag['tag']) == type(str()):
 				tags.append(tag['tag'])
 			elif type(tag['tag']) == type(list()):
 				tags.extend(tag['tag'])
+
+		return tags

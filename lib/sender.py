@@ -13,6 +13,7 @@ class EventSender(threading.Thread):
 		self.queue = queue
 		self.riemann = riemann_client
 		self.enable_threads = enable_threads
+		self.daemon = True
 
 	def run(self):
 		while self.enable_threads:
