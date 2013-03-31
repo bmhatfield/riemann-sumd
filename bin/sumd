@@ -120,7 +120,8 @@ def main():
     log_output.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
     log.addHandler(log_output)
 
-    log.info("Creating pidfile with PID: %s" % (pidfile(create=True)))
+    if not options.dev_mode:
+        log.info("Creating pidfile with PID: %s" % (pidfile(create=True)))
 
     # Create scheduler
     schedule = scheduler.TaskSchedule()
