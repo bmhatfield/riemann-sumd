@@ -1,24 +1,20 @@
 #!/usr/bin/env python
 
 # Add cwd-relative lib to path
+import os
 import sys
 sys.path.append("lib")
 
-# Just for sleep!
+# Misc standard library imports
 import time
-
-# Import logging
-import logging
-
-# Import queueing library
 import Queue
-
-# Import threading library to manage threads
+import logging
 import threading
 
-# Import option parser
+# Option parsing import
 from optparse import OptionParser
 
+# 3rd party dependencies --
 # YAML parser
 # http://pyyaml.org/wiki/PyYAML
 import yaml
@@ -27,10 +23,11 @@ import yaml
 # http://pypi.python.org/pypi/python-daemon/
 import daemon
 
-# Riemann client library, depends on protobufs
+# Riemann client library, depends on 'protobuf'
 # https://github.com/banjiewen/bernhard
 import bernhard
 
+# Module dependencies --
 # Task configuration loader library
 import loader
 
@@ -49,58 +46,142 @@ parser.add_option("--riemann-host", dest="riemann_host", default="localhost", he
 parser.add_option("--riemann-port", dest="riemann_port", default=5555, help="Port that Riemann is running on")
 parser.add_option("--task-limit", dest="task_limit", default=25, help="Limit of concurrent tasks running")
 parser.add_option("--worker-limit", dest="worker_limit", default=5, help="Limit of concurrent event sending worker threads running")
+parser.add_option("--log-dir", dest="log_directory", default=".", help="Directory for where logs should end up")
+parser.add_option("--config-dir", dest="config_directory", default="examples/etc/sumd", help="Root path where tasks.d and tags.d can be found")
+parser.add_option("--run-dir", dest="run_directory", default=".", help="Directory for where pidfiles should be placed")
 parser.add_option("--dev-mode", dest="dev_mode", action='store_true', default=False, help="Enable development mode")
 (options, args) = parser.parse_args()
 
-# Configure logging
-console = logging.StreamHandler()
-console.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
-log = logging.getLogger()
-log.addHandler(console)
 
-if options.dev_mode:
-	log.setLevel(logging.DEBUG)
-else:
-	log.setLevel(logging.INFO)
+def pidfile(directory=options.run_directory, create=False, delete=False):
+    if create and delete:
+        raise ValueError("Cannot both 'create' and 'delete' PID")
 
-# Load and add tags
-generic_tags = []
-tag_configs = loader.TagLoader("examples/etc/sumd/tags.d", "*.tag")
-tag_configs.add_tags(generic_tags)
-log.info("Generic Tags: %s" % (generic_tags))
+    pidpath = os.path.join(directory, 'sumd.pid')
+    exists = os.path.isfile(pidpath)
 
-# Load and schedule tasks
-schedule = scheduler.TaskSchedule()
-task_configs = loader.TaskLoader("examples/etc/sumd/tasks.d", "*.task")
-task_configs.create_tasks(schedule, generic_tags)
+    if exists:
+        if create:
+            raise IOError("%s already exists!" % (pidpath))
+        elif delete:
+            os.unlink(pidpath)
+        else:
+            with open(pidpath, 'r') as pid:
+                return int(pid.read())
+    else:
+        if create:
+            with open(pidpath, 'w') as pid:
+                pid.write(str(os.getpid()))
+            return os.getpid()
+        elif delete:
+            raise IOError("%s does not exist!" % (pidpath))
+        else:
+            return False
 
-# Create task queue for worker threads, enable thread processing
-tasks = Queue.Queue(options.task_limit)
-enable_threads = threading.Event()
-enable_threads.set()
 
-# Create riemann client
-riemann = bernhard.Client(host=options.riemann_host, port=options.riemann_port, transport=bernhard.UDPTransport)
+def alive(pid):
+    try:
+        os.kill(pid, 0)
+    except OSError:
+        return False
+    else:
+        return True
 
-# Create worker pool
-workers = []
-for i in range(options.worker_limit):
-	worker = sender.EventSender(tasks, riemann, enable_threads)
-	worker.start()
-	workers.append(worker)
 
-# Run main program loop
-while True:
-	try:
-		while schedule.waiting() > 0:
-			task, deadline = schedule.next()
-			task.start()
-			tasks.put(task, block=True)
-			schedule.add(task)
-		else:
-			time.sleep(1)
-	except KeyboardInterrupt, SystemExit:
-		for i in range(len(workers)):
-			tasks.put("exit")
-		enable_threads.clear()
-		break
+def load_configs(schedule):
+    # Load host-wide tags from tag config files
+    generic_tags = []
+    tag_configs = loader.TagLoader(os.path.join(options.config_directory, "tags.d"), "*.tag")
+    generic_tags = tag_configs.load_tags()
+
+    # Load collection of tasks from task config files
+    task_configs = loader.TaskLoader(os.path.join(options.config_directory, "tasks.d"), "*.task")
+    tasks = task_configs.load_tasks(additional_tags=generic_tags)
+
+    for task in tasks:
+        schedule.add(task)
+
+
+def main():
+    # Configure logging, must be done inside main to preserve file handling.
+    log = logging.getLogger()
+
+    if options.dev_mode:
+        log_output = logging.StreamHandler()
+        log.setLevel(logging.DEBUG)
+    else:
+        log_output = logging.FileHandler(os.path.join(options.log_directory, 'sumd.log'))
+        log.setLevel(logging.INFO)
+
+    log_output.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+    log.addHandler(log_output)
+
+    log.info("Creating pidfile with PID: %s" % (pidfile(create=True)))
+
+    # Create scheduler
+    schedule = scheduler.TaskSchedule()
+
+    # Load the task and tag configuration files, providing a schedule object.
+    # The schedule will be updated to have a current version of all tasks.
+    load_configs(schedule=schedule)
+
+    # Create task queue for worker threads, enable thread processing
+    tasks = Queue.Queue(options.task_limit)
+    enable_threads = threading.Event()
+    enable_threads.set()
+
+    # Create riemann client
+    riemann = bernhard.Client(host=options.riemann_host, port=options.riemann_port, transport=bernhard.UDPTransport)
+
+    # Create worker pool
+    workers = []
+    for i in range(options.worker_limit):
+        worker = sender.EventSender(tasks, riemann, enable_threads)
+        worker.start()
+        workers.append(worker)
+    
+    # Run main loop
+    while True:
+        try:
+            while schedule.waiting() > 0:
+                task, deadline = schedule.next()
+                task.start()
+                tasks.put(task, block=True)
+                schedule.add(task)
+            else:
+                time.sleep(1)
+        except KeyboardInterrupt, SystemExit:
+            # This enables clean thread shutdown when an 'exit' event is sent
+            # to the main loop. Without this, the program would not properly
+            # exit on a quit signal.
+            enable_threads.clear()
+            for i in range(len(workers)):
+                tasks.put("exit")
+            break
+
+
+if __name__ == "__main__":
+    if len(args) == 0 or 'start' in args:
+        if options.dev_mode:
+            main()
+        else:
+            try:
+                with daemon.DaemonContext(working_directory="."):
+                    main()
+            except Exception as e:
+                with open(os.path.join(options.log_directory, 'sumd.log'), 'a+') as fh:
+                    fh.write(str(e))
+    elif 'stop' in args:
+        pid = pidfile()
+
+        if pid and alive(pid):
+            try:
+                os.kill(pid, 15)
+                pidfile(delete=True)
+            except Exception as e:
+                print "Unable to kill %s: %s" % (pidfile(), str(e))
+        elif pid:
+            pidfile(delete=True)
+        else:
+            print "No such process or PID"
+            sys.exit(0)
