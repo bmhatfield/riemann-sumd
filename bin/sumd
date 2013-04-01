@@ -50,12 +50,25 @@ parser.add_option("--riemann-host", dest="riemann_host", default="localhost", he
 parser.add_option("--riemann-port", dest="riemann_port", default=5555, help="Port that Riemann is running on")
 parser.add_option("--task-limit", dest="task_limit", default=25, help="Limit of concurrent tasks running")
 parser.add_option("--worker-limit", dest="worker_limit", default=5, help="Limit of concurrent event sending worker threads running")
-parser.add_option("--log-dir", dest="log_directory", default=".", help="Directory for where logs should end up")
-parser.add_option("--config-dir", dest="config_directory", default="examples/etc/sumd", help="Root path where tasks.d and tags.d can be found")
-parser.add_option("--run-dir", dest="run_directory", default=".", help="Directory for where pidfiles should be placed")
+parser.add_option("--log-dir", dest="log_directory", default="/var/log/sumd", help="Directory for where logs should end up")
+parser.add_option("--config-dir", dest="config_directory", default="/etc/sumd", help="Root path where tasks.d and tags.d can be found")
+parser.add_option("--run-dir", dest="run_directory", default="/var/run/sumd", help="Directory for where pidfiles should be placed")
 parser.add_option("--foreground", dest="foreground", action='store_true', default=False, help="Don't daemonize.")
 parser.add_option("--debug", dest="debug", action='store_true', default=False, help="Increase logger verbosity")
 (options, args) = parser.parse_args()
+
+# Load global config options. If the command-line options are still at their
+# defaults, then use the config file's options. Otherwise, use the command
+# line value instead.
+if os.path.isfile(os.path.join(options.config_directory, "sumd.conf")):
+    with open(os.path.join(options.config_directory, "sumd.conf")) as sumd_config:
+        global_conf = yaml.safe_load(sumd_config.read())
+
+        defaults = parser.get_default_values()
+        for key in global_conf.iterkeys():
+            if hasattr(defaults, key) and hasattr(options, key):
+                if getattr(defaults, key) == getattr(options, key):
+                    setattr(options, key, global_conf[key])
 
 
 def pidfile(directory=options.run_directory, create=False, delete=False):
