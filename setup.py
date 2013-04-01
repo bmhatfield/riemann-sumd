@@ -19,5 +19,3 @@ setup(name="riemann-sumd",
                   ('/etc/sumd/tags.d', ['examples/etc/sumd/tags.d/simple.tag.example'])],
       scripts=["bin/sumd"]
     )
-
-copy_file('/lib/init/upstart-job', '/etc/init.d/sumd', link='sym')
