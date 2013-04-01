@@ -13,6 +13,8 @@ import multiprocessing
 
 # Requests, for CloudKickTask
 import requests
+requests_log = logging.getLogger("requests")
+requests_log.setLevel(logging.WARNING)
 
 import time
 
