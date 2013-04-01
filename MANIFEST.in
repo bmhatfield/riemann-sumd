@@ -1,7 +1,7 @@
 include setup.cfg
 include setup.py
 include bin/sumd
-include examples/etc/sumd/sumd.conf.example
+include examples/etc/sumd/sumd.conf
 include examples/etc/sumd/tags.d/simple.tag.example
 include examples/etc/sumd/tasks.d/simple.task.example
 include init/ubuntu/sumd.conf
