@@ -65,11 +65,20 @@ if os.path.isfile(os.path.join(options.config_directory, "sumd.conf")):
         global_conf = yaml.safe_load(sumd_config.read())
 
         defaults = parser.get_default_values()
-        if len(global_conf) > 0:
+        if global_conf and len(global_conf) > 0:
             for key in global_conf.iterkeys():
                 if hasattr(defaults, key) and hasattr(options, key):
                     if getattr(defaults, key) == getattr(options, key):
                         setattr(options, key, global_conf[key])
+
+
+def alive(pid):
+    try:
+        os.kill(pid, 0)
+    except OSError:
+        return False
+    else:
+        return True
 
 
 def pidfile(directory=options.run_directory, create=False, delete=False):
@@ -80,13 +89,19 @@ def pidfile(directory=options.run_directory, create=False, delete=False):
     exists = os.path.isfile(pidpath)
 
     if exists:
-        if create:
+        with open(pidpath, 'r') as pid:
+            pid = int(pid.read())
+ 
+        if create and alive(pid):
             raise IOError("%s already exists!" % (pidpath))
         elif delete:
             os.unlink(pidpath)
+        elif create:
+            with open(pidpath, 'w') as pid:
+                pid.write(str(os.getpid()))
+            return os.getpid()
         else:
-            with open(pidpath, 'r') as pid:
-                return int(pid.read())
+            return pid
     else:
         if create:
             with open(pidpath, 'w') as pid:
@@ -96,15 +111,6 @@ def pidfile(directory=options.run_directory, create=False, delete=False):
             raise IOError("%s does not exist!" % (pidpath))
         else:
             return False
-
-
-def alive(pid):
-    try:
-        os.kill(pid, 0)
-    except OSError:
-        return False
-    else:
-        return True
 
 
 def load_configs(schedule):
@@ -201,6 +207,7 @@ if __name__ == "__main__":
             try:
                 os.kill(pid, 15)
                 pidfile(delete=True)
+                print "Killed sumd (%s)" % (pid)
             except Exception as e:
                 print "Unable to kill %s: %s" % (pidfile(), str(e))
         elif pid:
