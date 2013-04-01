@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from distutils.core import setup
+from distutils.file_utl import copy_file
 import platform
 
 version = "0.1.0"
@@ -18,3 +19,5 @@ setup(name="riemann-sumd",
                   ('/etc/sumd/tags.d', ['examples/etc/sumd/tags.d/simple.tag.example'])],
       scripts=["bin/sumd"]
     )
+
+copy_file('/lib/init/upstart-job', '/etc/init.d/sumd', link='sym')
