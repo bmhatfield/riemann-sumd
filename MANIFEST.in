@@ -1,0 +1,12 @@
+include setup.cfg
+include setup.py
+include bin/sumd
+include examples/etc/sumd/sumd.conf.example
+include examples/etc/sumd/tags.d/simple.tag.example
+include examples/etc/sumd/tasks.d/simple.task.example
+include init/ubuntu/sumd.conf
+include lib/event.py
+include lib/loader.py
+include lib/scheduler.py
+include lib/sender.py
+include lib/task.py
