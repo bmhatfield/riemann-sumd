@@ -15,6 +15,6 @@ setup(name="riemann-sumd",
       data_files=[('/etc/init/', ["init/ubuntu/sumd.conf"]),
                   ('/etc/sumd', ['examples/etc/sumd/sumd.conf.example']),
                   ('/etc/sumd/tasks.d', ['examples/etc/sumd/tasks.d/simple.task.example']),
-                  ('/etc/sumd/tags.d', ['examples/etc/sumd/tasks.d/simple.tag.example'])],
+                  ('/etc/sumd/tags.d', ['examples/etc/sumd/tags.d/simple.tag.example'])],
       scripts=["bin/sumd"]
     )
