@@ -36,5 +36,6 @@ nosetests.xml
 .project
 .pydevproject
 
+MANIFEST
 sumd.pid
 sumd.log

@@ -1,5 +1,0 @@
-service: "Directory List"
-arg: "ls"
-ttl: 10
-tags: ['directories', 'page', 'notify']
-type: "nagios"
