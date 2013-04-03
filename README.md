@@ -6,7 +6,7 @@ Python agent for scheduling event generating processes and sending the results t
 Why?
 ----
 
-While configuring my Riemann install, I noticed that the already-built clients were single-purpose daemons that sent their own events to Riemann. The operationalize such a thing, I'd have to deploy and monitor and maintain a fleet of monitoring daemon processes, which I was not interested in doing.
+While configuring my Riemann install, I noticed that the already-built clients were single-purpose daemons that sent their own events to Riemann. To operationalize such a thing, I'd have to deploy and monitor and maintain a fleet of little processes, which I was not interested in doing.
 
 Instead, I decided that I'd prefer to have a small daemon that scheduled tasks to run, and transformed their output into Riemann events. Additionally, I realized that there's a wealth of monitoring scripts out there that conform quite nicely to the idea of 'state' in a Riemann event: Nagios checks! If one could run a Nagios check, capture the return code, and send it (and the check's output) to Riemann as an event, that could be quite useful!
 
