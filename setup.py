@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 from distutils.core import setup
-from distutils.file_util import copy_file
-import platform
 
 version = "0.1.0"
 

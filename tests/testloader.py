@@ -1,4 +1,13 @@
 import unittest
 
 class TestLoader(unittest.TestCase):
-	pass
+    def test_init(self):
+        pass
+
+class TestTaskLoader(TestLoader):
+    def test_init(self):
+        pass
+
+class TestTagLoader(TestLoader):
+    def test_init(self):
+        pass
