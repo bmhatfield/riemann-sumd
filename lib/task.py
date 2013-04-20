@@ -55,20 +55,6 @@ class Task():
         return self.events
 
 
-class PythonTask(Task):
-    def __init__(self, name, ttl, arg):
-        Task.__init__(self, name, ttl)
-        self.module = arg
-
-    def run(self):
-        # TODO: Not yet built. Needs dynamic module/class loading
-        pass
-
-    def join(self):
-        #self.events.add(service=self.name, state=state, description=description, ttl=self.ttl, tags=self.tags)
-        pass
-
-
 class CloudKickTask(Task):
     def __init__(self, name, ttl, arg):
         Task.__init__(self, name, ttl)
