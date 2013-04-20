@@ -8,9 +8,15 @@ class TestLoader(unittest.TestCase):
         pass
 
 class TestTaskLoader(TestLoader):
+    def setUp(self):
+        pass
+
     def test_init(self):
         pass
 
 class TestTagLoader(TestLoader):
+    def setUp(self):
+        pass
+        
     def test_init(self):
         pass

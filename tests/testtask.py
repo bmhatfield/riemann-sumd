@@ -24,15 +24,27 @@ class TestTask(unittest.TestCase):
 
 
 class TestPythonTask(TestTask):
+    def setUp(self):
+        pass
+
     def test_init(self):
         pass
 
 
 class TestCloudKickTask(TestTask):
+    def setUp(self):
+        # Perhaps start a simple http server with JSON output?
+        # Or replay a captured copy of actual JSON output?
+        pass
+
     def test_init(self):
         pass
 
 
 class TestNagiosTask(TestTask):
+    def setUp(self):
+        # Scaffold up a nagios task that does something silly
+        pass
+
     def test_init(self):
         pass

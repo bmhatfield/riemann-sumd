@@ -33,6 +33,9 @@ class TestEvent(unittest.TestCase):
         self.assertEqual(storedevent['tags'], ["a", "b"])
 
     def test_send(self):
+        # TODO: Validate that proper metric structure is generated with
+        # expected metric properties! (Maybe we can just check the protobuf, 
+        # without Riemann?)
         e = event.Events()
 
         e.add(service="servicename",

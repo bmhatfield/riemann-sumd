@@ -4,6 +4,9 @@ sys.path.append("lib")
 import unittest
 
 class TestTaskSchedule(unittest.TestCase):
+    def setUp(self):
+        pass
+        
     def test_init(self):
         pass
 
