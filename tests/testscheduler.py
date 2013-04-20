@@ -1,4 +1,23 @@
+import sys
+sys.path.append("lib")
+
 import unittest
 
-class TestScheduler(unittest.TestCase):
-    pass
+class TestTaskSchedule(unittest.TestCase):
+    def test_init(self):
+        pass
+
+    def test_add(self):
+        pass
+
+    def test_update(self):
+        pass
+
+    def test_next(self):
+        pass
+
+    def test_ready(self):
+        pass
+
+    def test_waiting(self):
+        pass
