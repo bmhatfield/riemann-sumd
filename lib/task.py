@@ -161,10 +161,15 @@ class JSONTask(Task):
                 log.error("Failed to parse JSON. '%s':\n%s" % (self.name, str(e)))
 
             for result in results:
-                self.events.add(service=result.service,
-                                state=result.state,
-                                description=result.description,
-                                metric=result.metric,
+                for field in ['service', 'state', 'description', 'metric']:
+                    if field not in result:
+                        log.error("Event missing field '%s'" % (field))
+                        continue
+
+                self.events.add(service=result['service'],
+                                state=result['state'],
+                                description=result['description'],
+                                metric=result['metric'],
                                 ttl=self.ttl,
                                 tags=self.tags)
         except Exception as e:
