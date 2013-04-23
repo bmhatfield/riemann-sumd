@@ -25,7 +25,7 @@ class Loader():
 class TaskLoader(Loader):
     task_types = {
         'nagios': task.NagiosTask,
-        'python': task.PythonTask,
+        'json': task.JSONTask,
         'cloudkick': task.CloudKickTask
     }
 

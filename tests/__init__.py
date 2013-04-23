@@ -17,7 +17,7 @@ suites.append(unittest.TestLoader().loadTestsFromTestCase(TestTaskSchedule))
 
 suites.append(unittest.TestLoader().loadTestsFromTestCase(TestSender))
 
-suites.append(unittest.TestLoader().loadTestsFromTestCase(TestPythonTask))
+suites.append(unittest.TestLoader().loadTestsFromTestCase(TestJSONTask))
 suites.append(unittest.TestLoader().loadTestsFromTestCase(TestCloudKickTask))
 suites.append(unittest.TestLoader().loadTestsFromTestCase(TestNagiosTask))
 

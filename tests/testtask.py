@@ -23,7 +23,7 @@ class TestTask(unittest.TestCase):
         pass
 
 
-class TestPythonTask(TestTask):
+class TestJSONTask(TestTask):
     def setUp(self):
         pass
 

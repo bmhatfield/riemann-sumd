@@ -16,6 +16,9 @@ import requests
 requests_log = logging.getLogger("requests")
 requests_log.setLevel(logging.WARNING)
 
+# JSON, for JSONTask
+import json
+
 import time
 
 class Task():
@@ -126,6 +129,43 @@ class NagiosTask(Task):
             else:
                 state = 'unknown'
 
-            self.events.add(service=self.name, state=state, description=description, ttl=self.ttl, tags=self.tags)
+            self.events.add(service=self.name,
+                            state=state,
+                            description=description,
+                            ttl=self.ttl,
+                            tags=self.tags)
+        except Exception as e:
+            log.error("Exception joining task '%s':\n%s" % (self.name, str(e)))
+
+
+class JSONTask(Task):
+    def __init__(self, name, ttl, arg, shell=False):
+        Task.__init__(self, name, ttl)
+        self.raw_command = arg
+        self.command = shlex.split(arg)
+        self.use_shell = shell
+
+    def run(self):
+        try:
+            self.process = subprocess.Popen(self.command, stdout=subprocess.PIPE, shell=self.use_shell)
+        except Exception as e:
+            log.error("Exception running task '%s':\n%s" % (self.name, str(e)))
+
+    def join(self):
+        try:
+            stdout, sterr = self.process.communicate()
+
+            try:
+                results = json.loads(stdout)
+            except Exception as e:
+                log.error("Failed to parse JSON. '%s':\n%s" % (self.name, str(e)))
+
+            for result in results:
+                self.events.add(service=result.service,
+                                state=result.state,
+                                description=result.description,
+                                metric=result.metric,
+                                ttl=self.ttl,
+                                tags=self.tags)
         except Exception as e:
             log.error("Exception joining task '%s':\n%s" % (self.name, str(e)))
