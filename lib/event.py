@@ -8,7 +8,7 @@ class Events():
     def __init__(self):
         self.events = []
 
-    def add(self, service, state, description, ttl, tags=None, metric=None, host=socket.gethostname(), ttl_multiplier=2):
+    def add(self, service, state, description, ttl, tags=None, metric=None, attributes=None, host=socket.gethostname(), ttl_multiplier=2):
         event = {}
         event['service'] = service
         event['state'] = state
@@ -21,6 +21,9 @@ class Events():
 
         if metric is not None:
             event['metric'] = metric
+
+        if attributes is not None:
+            event['attributes'] = attributes
 
         self.events.append(event)
         log.debug("Event added: %s" % (event))
