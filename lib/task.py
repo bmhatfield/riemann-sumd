@@ -1,6 +1,9 @@
 import logging
 log = logging.getLogger(__name__)
 
+import re
+import time
+
 # Events, for Task
 import event
 
@@ -18,8 +21,6 @@ requests_log.setLevel(logging.WARNING)
 
 # JSON, for JSONTask
 import json
-
-import time
 
 class Task():
     def __init__(self, name, ttl):
@@ -112,6 +113,17 @@ class NagiosTask(Task):
         self.command = shlex.split(arg)
         self.use_shell = shell
 
+    def parse_performance_data(self, raw_perf):
+        attrprefix = 'task_'
+        attributes = {}
+
+        perf_data = raw_perf.split(" ")
+        for item in perf_data:
+            key, val = item.split(';')[0].split('=')
+            attributes[attrprefix + key] = float(re.match('([0-9]+)', val).group(1))
+
+        return attributes
+
     def run(self):
         try:
             self.process = subprocess.Popen(self.command, stdout=subprocess.PIPE, shell=self.use_shell)
@@ -120,18 +132,36 @@ class NagiosTask(Task):
 
     def join(self):
         try:
-            stdout, sterr = self.process.communicate()
-            description = self.raw_command + "\n" + stdout
-            returncode = self.process.returncode
+            metric = None
+            state = 'unknown'
+            attributes = None
 
-            if returncode in self.exitcodes:
-                state = self.exitcodes[returncode]
+            stdout, sterr = self.process.communicate()
+
+            if self.process.returncode in self.exitcodes:
+                state = self.exitcodes[self.process.returncode]
+
+            parts = stdout.split("|")
+            if len(parts) == 1:
+                output = parts[0]
+                log.debug("Task '%s' did not return perf data." % (self.name))
+            elif len(parts) == 2:
+                output, raw_perf = parts
+                raw_perf = raw_perf.strip()
+                attributes = self.parse_performance_data(raw_perf)
+                log.debug("Task '%s' returned perf data: %s" % (self.name, raw_perf))
             else:
-                state = 'unknown'
+                output = stdout
+                log.warning("Output for task '%s' could not be parsed for perf data: %s" % (self.name, str(parts)))
+
+            if attributes:
+                metric = attributes[attributes.keys()[0]]
 
             self.events.add(service=self.name,
                             state=state,
-                            description=description,
+                            description=self.raw_command + "\n" + output,
+                            metric=metric,
+                            attributes=attributes,
                             ttl=self.ttl,
                             tags=self.tags)
         except Exception as e:
