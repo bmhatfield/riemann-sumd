@@ -8,19 +8,29 @@ import time
 import event
 
 # Subprocess, for NagiosTask
-import subprocess
 import shlex
+import subprocess
 
 # Multiprocessing, for PythonTask
 import multiprocessing
 
 # Requests, for CloudKickTask
 import requests
-requests_log = logging.getLogger("requests")
-requests_log.setLevel(logging.WARNING)
 
 # JSON, for JSONTask
 import json
+
+# Numeric matcher for parsing Nagios performance data
+# create class constant compiled regex, to prevent
+# unecessarily recompiling this regex string.
+NUMERIC_REGEX = re.compile('([\d.]+)')
+
+# Configure logging for the Requests module, decreasing
+# the verbosity even when we are running in a more
+# verbose mode otherwise.
+requests_log = logging.getLogger("requests")
+requests_log.setLevel(logging.WARNING)
+
 
 class Task():
     def __init__(self, name, ttl):
@@ -112,17 +122,7 @@ class NagiosTask(Task):
         self.raw_command = arg
         self.command = shlex.split(arg)
         self.use_shell = shell
-
-    def parse_performance_data(self, raw_perf):
-        attrprefix = 'task_'
-        attributes = {}
-
-        perf_data = raw_perf.split(" ")
-        for item in perf_data:
-            key, val = item.split(';')[0].split('=')
-            attributes[attrprefix + key] = float(re.match('([0-9.]+)', val).group(1))
-
-        return attributes
+        self.attrprefix = 'task_'
 
     def run(self):
         try:
@@ -130,29 +130,35 @@ class NagiosTask(Task):
         except Exception as e:
             log.error("Exception running task '%s':\n%s" % (self.name, str(e)))
 
+    def parse_nagios_output(self, stdout):
+        parts = stdout.split("|")
+        if len(parts) == 1:
+            log.debug("Task '%s' did not return perf data." % (self.name))
+            return (parts[0], None)
+        elif len(parts) == 2:
+            attributes = {}
+            output, raw_perf = parts
+            log.debug("Task '%s' returned perf data: %s" % (self.name, raw_perf.strip()))
+            for item in raw_perf.strip().split(" "):
+                key, val = item.split(';')[0].split('=')
+                attributes[self.attrprefix + key] = float(NUMERIC_REGEX.match(val).group(1))
+
+            return output, attributes
+        else:
+            log.warning("Output for task '%s' could not be parsed for perf data: %s" % (self.name, str(parts)))
+            return (stdout, None)
+
     def join(self):
         try:
             metric = None
             state = 'unknown'
-            attributes = None
 
             stdout, sterr = self.process.communicate()
 
             if self.process.returncode in self.exitcodes:
                 state = self.exitcodes[self.process.returncode]
 
-            parts = stdout.split("|")
-            if len(parts) == 1:
-                output = parts[0]
-                log.debug("Task '%s' did not return perf data." % (self.name))
-            elif len(parts) == 2:
-                output, raw_perf = parts
-                raw_perf = raw_perf.strip()
-                attributes = self.parse_performance_data(raw_perf)
-                log.debug("Task '%s' returned perf data: %s" % (self.name, raw_perf))
-            else:
-                output = stdout
-                log.warning("Output for task '%s' could not be parsed for perf data: %s" % (self.name, str(parts)))
+            output, attributes = self.parse_nagios_output(stdout)
 
             if attributes:
                 metric = attributes[attributes.keys()[0]]
