@@ -120,7 +120,7 @@ class NagiosTask(Task):
         perf_data = raw_perf.split(" ")
         for item in perf_data:
             key, val = item.split(';')[0].split('=')
-            attributes[attrprefix + key] = float(re.match('([0-9]+)', val).group(1))
+            attributes[attrprefix + key] = float(re.match('([0-9.]+)', val).group(1))
 
         return attributes
 
