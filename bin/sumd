@@ -174,8 +174,13 @@ def main():
         try:
             while schedule.waiting() > 0:
                 task, deadline = schedule.next()
-                task.start()
-                tasks.put(task, block=True)
+
+                if not task.locked:
+                    task.start()
+                    tasks.put(task, block=True)
+                else:
+                    log.warning("Task '%s' locked, so not attempting to start another." % (task.name))
+
                 schedule.add(task)
             else:
                 time.sleep(1)

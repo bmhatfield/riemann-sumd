@@ -40,6 +40,7 @@ class Task():
         self.ttl = ttl
         self.tags = set()
         self.timings = [0.75]
+        self.locked = False
 
     def add_tags(self, tags):
         if type(tags) == type(str()) or type(tags) == type(int()):
@@ -57,15 +58,18 @@ class Task():
         return sum(self.timings)/len(self.timings)
 
     def start(self):
-        log.info("Starting task: '%s' (usually takes %0.2fs)" % (self.name, self.skew()))
-        self.start_time = time.time()
-        self.run()
+        if not self.locked:
+            log.info("Starting task: '%s' (usually takes %0.2fs)" % (self.name, self.skew()))
+            self.locked = True
+            self.start_time = time.time()
+            self.run()
+        else:
+            raise RuntimeError("Task '%s' is locked - cannot start another." % (self.name))
 
     def get_events(self):
         self.join()
         self.end_time = time.time()
         self.add_timing(self.end_time - self.start_time)
-
         return self.events
 
 
@@ -121,6 +125,7 @@ class NagiosTask(Task):
         Task.__init__(self, name, ttl)
         self.raw_command = arg
         self.command = shlex.split(arg)
+        self.process = None
         self.use_shell = shell
         self.attrprefix = 'task_'
 
@@ -153,7 +158,20 @@ class NagiosTask(Task):
             metric = None
             state = 'unknown'
 
-            stdout, sterr = self.process.communicate()
+            deadline = self.start_time + (self.ttl * 0.5)
+            while deadline > time.time():
+                if self.process.poll() == None:
+                    time.sleep(0.5)
+                else:
+                    log.debug("Gathering output from task '%s'" % (self.name))
+                    stdout, sterr = self.process.communicate()
+                    break
+            else:
+                log.warning("Deadline expired for task '%s' - force killing" % (self.name))
+                self.process.kill()
+                self.process.wait()
+                log.debug("Subprocess killed for task '%s'" % (self.name))
+                return
 
             if self.process.returncode in self.exitcodes:
                 state = self.exitcodes[self.process.returncode]

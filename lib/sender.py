@@ -24,11 +24,12 @@ class EventSender(threading.Thread):
                 log.debug("%s: received 'exit' event" % (self.name))
                 break
 
-            log.debug("%s: Got task - %s" % (self.name, task.name))
+            log.debug("%s: Waiting for events from '%s'" % (self.name, task.name))
             events = task.get_events()
 
-            log.debug("%s: Sending events - %s" % (self.name, task.name))
+            log.debug("%s: Waiting complete - attempting to send events - %s" % (self.name, task.name))
             events.send(self.riemann)
 
-            log.debug("%s: sending task complete - %s" % (self.name, task.name))
+            log.debug("%s: Events sent - %s" % (self.name, task.name))
+            task.locked = False
             self.queue.task_done()

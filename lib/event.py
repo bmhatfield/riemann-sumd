@@ -29,10 +29,13 @@ class Events():
         log.debug("Event added: %s" % (event))
 
     def send(self, client):
-        log.debug("Sending %s events..." % (len(self.events)))
-        while len(self.events) > 0:
-            event = self.events.pop(0)
-            try:
-                client.send(event)
-            except socket.error:
-                log.error("Unable to send event '%s' to %s:%s" % (event['service'], client.host, client.port))
+        if len(self.events) > 0:
+            log.debug("Sending %s events..." % (len(self.events)))
+            while len(self.events) > 0:
+                event = self.events.pop(0)
+                try:
+                    client.send(event)
+                except socket.error:
+                    log.error("Unable to send event '%s' to %s:%s" % (event['service'], client.host, client.port))
+        else:
+            log.warning("Send called on event object with no events to send.")

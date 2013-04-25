@@ -26,7 +26,7 @@ class TaskSchedule():
 
     def next(self):
         task, deadline = self.tasks.pop()
-        log.debug("Next task is '%s' scheduled to run in %0.2fs" % (task.name, deadline-time.time()))
+        log.debug("Task '%s' near deadline (scheduled in %0.2fs)" % (task.name, deadline-time.time()))
         return (task, deadline)
 
     def ready(self, deadline, grace=1.1):
