@@ -113,14 +113,7 @@ class CloudKickTask(Task):
             log.error("Exception joining CloudKickTask '%s'\n%s" % (self.name, str(e)))
 
 
-class NagiosTask(Task):
-    exitcodes = {
-        0: 'ok',
-        1: 'warn',
-        2: 'critical',
-        3: 'unknown'
-    }
-
+class SubProcessTask(Task):
     def __init__(self, name, ttl, arg, shell=False):
         Task.__init__(self, name, ttl)
         self.raw_command = arg
@@ -134,6 +127,38 @@ class NagiosTask(Task):
             self.process = subprocess.Popen(self.command, stdout=subprocess.PIPE, shell=self.use_shell)
         except Exception as e:
             log.error("Exception running task '%s':\n%s" % (self.name, str(e)))
+
+    def join(self):
+        try:
+            deadline = self.start_time + (self.ttl * 0.5)
+            while deadline > time.time():
+                if self.process.poll() == None:
+                    time.sleep(0.5)
+                else:
+                    log.debug("Gathering output from task '%s'" % (self.name))
+                    stdout, sterr = self.process.communicate()
+                    return stdout, sterr, self.process.returncode
+            else:
+                log.warning("Deadline expired for task '%s' - force killing" % (self.name))
+                self.process.kill()
+                self.process.wait()
+                log.debug("Subprocess killed for task '%s'" % (self.name))
+                return '', '', -127
+        except Exception as e:
+            log.error("Exception joining task '%s':\n%s" % (self.name, str(e)))
+
+
+class NagiosTask(SubProcessTask):
+    exitcodes = {
+     -127: 'timeout',
+        0: 'ok',
+        1: 'warn',
+        2: 'critical',
+        3: 'unknown'
+    }
+
+    def __init__(self, name, ttl, arg, shell=False):
+        SubProcessTask.__init__(self, name, ttl, arg, shell)
 
     def parse_nagios_output(self, stdout):
         parts = stdout.split("|")
@@ -158,23 +183,10 @@ class NagiosTask(Task):
             metric = None
             state = 'unknown'
 
-            deadline = self.start_time + (self.ttl * 0.5)
-            while deadline > time.time():
-                if self.process.poll() == None:
-                    time.sleep(0.5)
-                else:
-                    log.debug("Gathering output from task '%s'" % (self.name))
-                    stdout, sterr = self.process.communicate()
-                    break
-            else:
-                log.warning("Deadline expired for task '%s' - force killing" % (self.name))
-                self.process.kill()
-                self.process.wait()
-                log.debug("Subprocess killed for task '%s'" % (self.name))
-                return
+            stdout, stderr, returncode = SubProcessTask.join(self)
 
-            if self.process.returncode in self.exitcodes:
-                state = self.exitcodes[self.process.returncode]
+            if returncode in self.exitcodes:
+                state = self.exitcodes[returncode]
 
             output, attributes = self.parse_nagios_output(stdout)
 
@@ -192,22 +204,13 @@ class NagiosTask(Task):
             log.error("Exception joining task '%s':\n%s" % (self.name, str(e)))
 
 
-class JSONTask(Task):
+class JSONTask(SubProcessTask):
     def __init__(self, name, ttl, arg, shell=False):
-        Task.__init__(self, name, ttl)
-        self.raw_command = arg
-        self.command = shlex.split(arg)
-        self.use_shell = shell
-
-    def run(self):
-        try:
-            self.process = subprocess.Popen(self.command, stdout=subprocess.PIPE, shell=self.use_shell)
-        except Exception as e:
-            log.error("Exception running task '%s':\n%s" % (self.name, str(e)))
+        SubProcessTask.__init__(self, name, ttl, arg, shell)
 
     def join(self):
         try:
-            stdout, sterr = self.process.communicate()
+            stdout, stderr, returncode = SubProcessTask.join(self)
 
             try:
                 results = json.loads(stdout)
