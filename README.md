@@ -16,8 +16,8 @@ How?
 It's a simple daemon with the capability to perform a few different 'types' of tasks on a schedule.
 
 - Nagios style tasks (IE; return 0 for OK, 2 for CRITICAL, etc)
+- JSON style tasks (Execute a command that returns a JSON list of events over stdout)
 - CloudKick JSON style tasks (much less common, but a specific JSON schema over HTTP)
-- Pure Python tasks (IE; dynamically load and process some Python code to generate events)
 
 The configuration aims to be dead simple: in a /etc/riemann/tasks.d/ directory, create SOMETASK.task with the following YAML-style fields:
 
