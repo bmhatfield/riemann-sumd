@@ -4,7 +4,7 @@ from testevent import TestEvent
 from testloader import TestTaskLoader, TestTagLoader
 from testscheduler import TestTaskSchedule
 from testsender import TestSender
-from testtask import TestPythonTask, TestCloudKickTask, TestNagiosTask
+from testtask import TestJSONTask, TestCloudKickTask, TestNagiosTask
 
 suites = []
 
