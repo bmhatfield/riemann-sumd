@@ -223,11 +223,16 @@ class JSONTask(SubProcessTask):
                         log.error("Event missing field '%s'" % (field))
                         continue
 
+                attributes = None
+                if "attributes" in result:
+                    attributes = {self.attrprefix + name: result["attributes"][name] for name in result["attributes"]}
+
                 self.events.add(service=result['service'],
                                 state=result['state'],
                                 description=result['description'],
                                 metric=result['metric'],
                                 ttl=self.ttl,
-                                tags=self.tags)
+                                tags=self.tags,
+                                attributes=attributes)
         except Exception as e:
             log.error("Exception joining task '%s':\n%s" % (self.name, str(e)))
