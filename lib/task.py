@@ -171,7 +171,7 @@ class NagiosTask(SubProcessTask):
             log.debug("Task '%s' returned perf data: %s" % (self.name, raw_perf.strip()))
             for item in raw_perf.strip().split(" "):
                 key, val = item.split(';')[0].split('=')
-                attributes[self.attrprefix + key] = float(NUMERIC_REGEX.match(val).group(1))
+                attributes[self.attrprefix + key] = val
 
             return output, attributes
         else:
@@ -191,7 +191,7 @@ class NagiosTask(SubProcessTask):
             output, attributes = self.parse_nagios_output(stdout)
 
             if attributes:
-                metric = attributes[attributes.keys()[0]]
+                metric = float(NUMERIC_REGEX.match(attributes[attributes.keys()[0]]).group(1))
 
             self.events.add(service=self.name,
                             state=state,
