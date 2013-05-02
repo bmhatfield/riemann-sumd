@@ -33,7 +33,7 @@ requests_log.setLevel(logging.WARNING)
 
 
 class Task():
-    def __init__(self, name, ttl):
+    def __init__(self, name, ttl, host=None):
         log.info("Creating task: '%s' with TTL of %ss" % (name, ttl))
         self.events = event.Events()
         self.name = name
@@ -41,6 +41,7 @@ class Task():
         self.tags = set()
         self.timings = [0.75]
         self.locked = False
+        self.host = host
 
     def add_tags(self, tags):
         if type(tags) == type(str()) or type(tags) == type(int()):
@@ -74,8 +75,8 @@ class Task():
 
 
 class CloudKickTask(Task):
-    def __init__(self, name, ttl, arg):
-        Task.__init__(self, name, ttl)
+    def __init__(self, name, ttl, arg, host=None):
+        Task.__init__(self, name, ttl, host)
         self.url = arg
 
     def request(self, url, q):
@@ -107,15 +108,16 @@ class CloudKickTask(Task):
                     metric=metric['value'],
                     description="Warn threshold: %s, Error threshold: %s" % (metric['warn_threshold'], metric['error_threshold']),
                     ttl=self.ttl,
-                    tags=self.tags
+                    tags=self.tags,
+                    host=self.host
                 )
         except Exception as e:
             log.error("Exception joining CloudKickTask '%s'\n%s" % (self.name, str(e)))
 
 
 class SubProcessTask(Task):
-    def __init__(self, name, ttl, arg, shell=False):
-        Task.__init__(self, name, ttl)
+    def __init__(self, name, ttl, arg, shell=False, host=None):
+        Task.__init__(self, name, ttl, host)
         self.raw_command = arg
         self.command = shlex.split(arg)
         self.process = None
@@ -157,8 +159,8 @@ class NagiosTask(SubProcessTask):
         3: 'unknown'
     }
 
-    def __init__(self, name, ttl, arg, shell=False):
-        SubProcessTask.__init__(self, name, ttl, arg, shell)
+    def __init__(self, name, ttl, arg, shell=False, host=None):
+        SubProcessTask.__init__(self, name, ttl, arg, shell, host)
 
     def parse_nagios_output(self, stdout):
         parts = stdout.split("|")
@@ -199,14 +201,15 @@ class NagiosTask(SubProcessTask):
                             metric=metric,
                             attributes=attributes,
                             ttl=self.ttl,
-                            tags=self.tags)
+                            tags=self.tags,
+                            host=self.host)
         except Exception as e:
             log.error("Exception joining task '%s':\n%s" % (self.name, str(e)))
 
 
 class JSONTask(SubProcessTask):
-    def __init__(self, name, ttl, arg, shell=False):
-        SubProcessTask.__init__(self, name, ttl, arg, shell)
+    def __init__(self, name, ttl, arg, shell=False, host=None):
+        SubProcessTask.__init__(self, name, ttl, arg, shell, host=None)
 
     def join(self):
         try:
@@ -233,6 +236,7 @@ class JSONTask(SubProcessTask):
                                 metric=result['metric'],
                                 ttl=self.ttl,
                                 tags=self.tags,
-                                attributes=attributes)
+                                attributes=attributes,
+                                host=self.host)
         except Exception as e:
             log.error("Exception joining task '%s':\n%s" % (self.name, str(e)))
