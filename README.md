@@ -26,6 +26,7 @@ The configuration aims to be dead simple: in a /etc/riemann/tasks.d/ directory, 
 > ttl: 60  
 > tags: ['flapper', 'notify']  
 > type: "nagios"  
+> host: "myhost.example.com"
 
 ( **strong** fields are required)  
 **service** - Whatever you'd like to call your service  
@@ -33,6 +34,7 @@ The configuration aims to be dead simple: in a /etc/riemann/tasks.d/ directory, 
 **ttl** - The frequency that you'd like to run your event  
 *tags* - A single item string or a list of tags to apply to this service  
 **type** - This maps internally to a class for running the task. Valid values are 'nagios', 'python', 'cloudkick'  
+*host* - What host is this event for
 
 Internally, the scheduler calculates the task's skew, and schedules the next event of this task to run at now + offset - skew. When that deadline is near, the scheduler returns the task, which is started in a subprocess and added to a queue to be examined later. A pool of worker threads pull the next already-running task off the queue, join it, wait for it to complete, and send the results to Riemann.
 
