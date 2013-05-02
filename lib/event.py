@@ -14,11 +14,7 @@ class Events():
         event['state'] = state
         event['description'] = description
         event['ttl'] = ttl * ttl_multiplier
-        if host:
-          event['host'] = host
-        else:
-          event['host'] = socket.gethostname()
-        
+
         if tags is not None:
             event['tags'] = tags
 
@@ -27,6 +23,11 @@ class Events():
 
         if attributes is not None:
             event['attributes'] = attributes
+
+        if host is None:
+          event['host'] = socket.gethostname()
+        else:
+          event['host'] = host
 
         self.events.append(event)
         log.debug("Event added: %s" % (event))
