@@ -42,7 +42,10 @@ class TaskLoader(Loader):
                     continue
 
             if task['type'] in self.task_types:
-                t = self.task_types[task['type']](name=task['service'], ttl=task['ttl'], arg=task['arg'])
+                host = None
+                if 'host' in task:
+                  host = task['host']
+                t = self.task_types[task['type']](name=task['service'], ttl=task['ttl'], arg=task['arg'], host=host)
 
                 if additional_tags is not None:
                     t.add_tags(additional_tags)
