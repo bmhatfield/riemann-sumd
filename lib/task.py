@@ -4,8 +4,11 @@ log = logging.getLogger(__name__)
 import re
 import time
 
+# For determining hostname
+import socket
+
 # Events, for Task
-import event
+import events
 
 # Subprocess, for NagiosTask
 import shlex
@@ -20,6 +23,14 @@ import requests
 # JSON, for JSONTask
 import json
 
+
+# Some module-level constants for definining tasks
+DEFAULT_TTL = 60
+DEFAULT_HOSTNAME = socket.gethostname()
+DEFAULT_MULTIPLIER = 5
+
+SEED_TIMING = 0.5
+
 # Numeric matcher for parsing Nagios performance data
 # create class constant compiled regex, to prevent
 # unecessarily recompiling this regex string.
@@ -33,22 +44,26 @@ requests_log.setLevel(logging.WARNING)
 
 
 class Task():
-    def __init__(self, name, ttl, host=None):
-        log.info("Creating task: '%s' with TTL of %ss" % (name, ttl))
-        self.events = event.Events()
-        self.name = name
-        self.ttl = ttl
-        self.tags = set()
-        self.timings = [0.75]
-        self.locked = False
-        self.host = host
+    def __init__(self, config):
+        self.config = config
 
-    def add_tags(self, tags):
-        if type(tags) == type(str()) or type(tags) == type(int()):
-            self.tags.add(tags)
-        elif type(tags) == type(list()):
-            for tag in tags:
-                self.tags.add(tag)
+        # Handle some common task options and their defaults (or exceptions) here
+        self.name = config['service'] if 'service' in config else raise KeyError("Config missing 'service'")
+        self.arg = config['arg'] if 'arg' in config else raise KeyError("Config missing 'arg'")
+
+        self.ttl_multiplier = config['ttl_multiplier'] if 'ttl_multiplier' in config else DEFAULT_MULTIPLIER
+        self.host = config['host'] if 'host' in config else DEFAULT_HOSTNAME
+        self.ttl = config['ttl'] if 'ttl' in config else DEFAULT_TTL
+
+        self.attributes = config['attributes'] if 'attributes' in config else {}
+        self.tags = set(config['tags']) if 'tags' in config else set()
+        self.note = config['note'] if 'note' in config else ""
+
+        self.events = []
+        self.timings = [SEED_TIMING]
+        self.locked = False
+
+        log.info("Creating task: '%s' with TTL of %ss" % (self.name, self.ttl))
 
     def add_timing(self, value, keep=5):
         log.debug("Task %s took %0.2fs" % (self.name, value))
@@ -67,7 +82,7 @@ class Task():
         else:
             raise RuntimeError("Task '%s' is locked - cannot start another." % (self.name))
 
-    def get_events(self):
+    def send(self):
         self.join()
         self.end_time = time.time()
         self.add_timing(self.end_time - self.start_time)
@@ -75,14 +90,13 @@ class Task():
 
 
 class CloudKickTask(Task):
-    def __init__(self, name, ttl, arg, host=None):
-        Task.__init__(self, name, ttl, host)
-        self.url = arg
+    def __init__(self, config):
+        Task.__init__(self, config)
 
-    def request(self, url, q):
+    def request(self, q):
         try:
-            log.debug("Starting web request to '%s'" % (url))
-            resp = requests.get(url)
+            log.debug("Starting web request to '%s'" % (self.arg))
+            resp = requests.get(self.arg)
             q.put(resp.json(), timeout=(self.ttl * 0.3))
         except Exception as e:
             log.error("Exception during request method of CloudKickTask '%s'\n%s" % (self.name, str(e)))
@@ -90,7 +104,7 @@ class CloudKickTask(Task):
     def run(self):
         try:
             self.q = multiprocessing.Queue()
-            self.proc = multiprocessing.Process(target=self.request, args=(self.url, self.q))
+            self.proc = multiprocessing.Process(target=self.request, args=(self.q))
             self.proc.start()
         except Exception as e:
             log.error("Exception starting CloudKickTask '%s'\n%s" % (self.name, str(e)))
@@ -102,26 +116,30 @@ class CloudKickTask(Task):
 
             log.debug('CloudKickTask: Processing %s metrics' % (len(json_result['metrics'])))
             for metric in json_result['metrics']:
-                self.events.add(
-                    service=metric['name'],
-                    state=metric['state'],
-                    metric=metric['value'],
-                    description="Warn threshold: %s, Error threshold: %s" % (metric['warn_threshold'], metric['error_threshold']),
-                    ttl=self.ttl,
-                    tags=self.tags,
-                    host=self.host
-                )
+                note = metric['note'] if 'note' in metric else self.note
+                event = events.Event()
+                event.ttl = self.ttl * self.ttl_multiplier
+                event.host = self.host
+                event.tags = self.tags
+                event.service = metric['name']
+                event.state = metric['state']
+                event.metric = metric['value']
+                event.description = "%s\nWarn threshold: %s, Error threshold: %s" % (note,
+                                                                                     metric['warn_threshold'],
+                                                                                     metric['error_threshold'])
+                self.events.append(event)
         except Exception as e:
             log.error("Exception joining CloudKickTask '%s'\n%s" % (self.name, str(e)))
 
 
 class SubProcessTask(Task):
-    def __init__(self, name, ttl, arg, shell=False, host=None):
-        Task.__init__(self, name, ttl, host)
-        self.raw_command = arg
-        self.command = shlex.split(arg)
+    def __init__(self, config):
+        Task.__init__(self, config)
+
+        self.raw_command = self.arg
+        self.command = shlex.split(self.arg)
         self.process = None
-        self.use_shell = shell
+        self.use_shell = False
         self.attrprefix = 'task_'
 
     def run(self):
@@ -159,10 +177,11 @@ class NagiosTask(SubProcessTask):
         3: 'unknown'
     }
 
-    def __init__(self, name, ttl, arg, shell=False, host=None):
-        SubProcessTask.__init__(self, name, ttl, arg, shell, host)
+    def __init__(self, config):
+        SubProcessTask.__init__(self, config)
 
     def parse_nagios_output(self, stdout):
+        # TODO: Be more robust if this fails for any reason
         parts = stdout.split("|")
         if len(parts) == 1:
             log.debug("Task '%s' did not return perf data." % (self.name))
@@ -182,34 +201,40 @@ class NagiosTask(SubProcessTask):
 
     def join(self):
         try:
-            metric = None
-            state = 'unknown'
-
             stdout, stderr, returncode = SubProcessTask.join(self)
 
-            if returncode in self.exitcodes:
-                state = self.exitcodes[returncode]
+            event = events.Event()
+            event.service = self.name
+            event.ttl = self.ttl * self.ttl_multiplier
+            event.host = self.host
+            event.tags = self.tags
+            event.attributes = self.attributes
 
             output, attributes = self.parse_nagios_output(stdout)
+            event.description = "Note: %s\nCommand: %s\nOutput: %s\n" % (self.note, self.raw_command, output)
+
+            if returncode in self.exitcodes:
+                event.state = self.exitcodes[returncode]
+            else:
+                event.state = 'unknown'
 
             if attributes:
-                metric = float(NUMERIC_REGEX.match(attributes[attributes.keys()[0]]).group(1))
+                if 'metric' in config and config['metric'] in attributes:
+                    metric_key = config['metric']
+                else:
+                    metric_key = attributes.keys()[0]
 
-            self.events.add(service=self.name,
-                            state=state,
-                            description=self.raw_command + "\n" + output,
-                            metric=metric,
-                            attributes=attributes,
-                            ttl=self.ttl,
-                            tags=self.tags,
-                            host=self.host)
+                event.attributes.update(attributes)
+                event.metric = float(NUMERIC_REGEX.match(attributes[metric_key]).group(1))
+
+            self.events.append(event)
         except Exception as e:
             log.error("Exception joining task '%s':\n%s" % (self.name, str(e)))
 
 
 class JSONTask(SubProcessTask):
-    def __init__(self, name, ttl, arg, shell=False, host=None):
-        SubProcessTask.__init__(self, name, ttl, arg, shell, host=None)
+    def __init__(self, config):
+        SubProcessTask.__init__(self, config)
 
     def join(self):
         try:
@@ -226,17 +251,19 @@ class JSONTask(SubProcessTask):
                         log.error("Event missing field '%s'" % (field))
                         continue
 
-                attributes = None
-                if "attributes" in result:
-                    attributes = {self.attrprefix + name: result["attributes"][name] for name in result["attributes"]}
+                event = events.Event()
+                event.ttl = self.ttl * self.ttl_multiplier
+                event.host = self.host
+                event.tags = self.tags
+                event.attributes = self.attributes
 
-                self.events.add(service=result['service'],
-                                state=result['state'],
-                                description=result['description'],
-                                metric=result['metric'],
-                                ttl=self.ttl,
-                                tags=self.tags,
-                                attributes=attributes,
-                                host=self.host)
+                if "attributes" in result:
+                    event.attributes.update({self.attrprefix + name: result["attributes"][name] for name in result["attributes"]})
+
+                event.service = result['service']
+                event.state = result['state']
+                event.metric = result['metric']
+                event.description = "%s\n%s" % (self.note, result['description'])
+                self.events.append(event)
         except Exception as e:
             log.error("Exception joining task '%s':\n%s" % (self.name, str(e)))

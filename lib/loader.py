@@ -29,31 +29,30 @@ class TaskLoader(Loader):
         'cloudkick': task.CloudKickTask
     }
 
+    required_fields = ['service', 'type', 'arg']
+
     def __init__(self, path, pattern):
         Loader.__init__(self, path, pattern)
         self.parse()
 
     def load_tasks(self, additional_tags=None):
         tasks = []
-        for task in self.configs:
-            for field in ['service', 'type', 'ttl', 'arg']:
-                if not field in task:
-                    log.error('Task found but missing field %s' % (field))
+        for config in self.configs:
+            for field in self.required_fields:
+                if field not in config:
+                    log.error('Task missing required field %s' % (field))
                     continue
 
-            if task['type'] in self.task_types:
-                host = None
-                if 'host' in task:
-                  host = task['host']
-                t = self.task_types[task['type']](name=task['service'], ttl=task['ttl'], arg=task['arg'], host=host)
+            if config['type'] in self.task_types:
+                # Creates a new task of type 'config['type']'
+                t = self.task_types[config['type']](config)
 
-                if additional_tags is not None:
-                    t.add_tags(additional_tags)
-
-                if 'tags' in task:
-                    t.add_tags(task['tags'])
+                if additional_tags:
+                    t.tags.union(set(additional_tags))
 
                 tasks.append(t)
+            else:
+                log.error("Task of type '%s' not supported!" % (config['type']))
 
         return tasks
 
