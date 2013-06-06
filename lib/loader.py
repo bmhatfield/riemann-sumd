@@ -26,7 +26,8 @@ class TaskLoader(Loader):
     task_types = {
         'nagios': task.NagiosTask,
         'json': task.JSONTask,
-        'cloudkick': task.CloudKickTask
+        'cloudkick': task.HTTPJSONTask,
+        'http_json': task.HTTPJSONTask
     }
 
     required_fields = ['service', 'type', 'arg']

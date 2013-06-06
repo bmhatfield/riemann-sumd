@@ -104,7 +104,7 @@ class Task():
         return tevents
 
 
-class CloudKickTask(Task):
+class HTTPJSONTask(Task):
     def __init__(self, config):
         Task.__init__(self, config)
 
