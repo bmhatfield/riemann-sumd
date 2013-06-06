@@ -44,13 +44,20 @@ requests_log.setLevel(logging.WARNING)
 
 
 class Task():
+    required_config = ['service', 'arg']
+
     def __init__(self, config):
         self.config = config
 
-        # Handle some common task options and their defaults (or exceptions) here
-        self.name = config['service'] if 'service' in config else raise KeyError("Config missing 'service'")
-        self.arg = config['arg'] if 'arg' in config else raise KeyError("Config missing 'arg'")
+        # Confirm that the passed config object contains required values
+        for key in self.required_config:
+            if key not in config:
+                raise KeyError("Config missing '%s'" % (key))
 
+        self.name = config['service']
+        self.arg = config['arg']
+
+        # Handle some common task options and their defaults
         self.ttl_multiplier = config['ttl_multiplier'] if 'ttl_multiplier' in config else DEFAULT_MULTIPLIER
         self.host = config['host'] if 'host' in config else DEFAULT_HOSTNAME
         self.ttl = config['ttl'] if 'ttl' in config else DEFAULT_TTL
@@ -59,6 +66,7 @@ class Task():
         self.tags = set(config['tags']) if 'tags' in config else set()
         self.note = config['note'] if 'note' in config else ""
 
+        # Initialize task internal values
         self.events = []
         self.timings = [SEED_TIMING]
         self.locked = False
