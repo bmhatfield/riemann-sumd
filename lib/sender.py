@@ -1,6 +1,8 @@
 # Import queueing library
 import threading
 
+import socket
+
 import time
 
 import logging
@@ -21,6 +23,7 @@ class EventSender(threading.Thread):
             while len(events) > 0:
                 event = events.pop(0)
                 try:
+                    log.debug("Event: %s" % (event.dict()))
                     self.riemann.send(event.dict())
                 except socket.error:
                     log.error("Unable to send event '%s' to %s:%s" % (event.service, self.riemann.host, self.riemann.port))
@@ -37,7 +40,8 @@ class EventSender(threading.Thread):
                 break
 
             log.debug("%s: Waiting for events from '%s'" % (self.name, task.name))
-            events = task.get_events()
+
+            events = task.drain()
 
             log.debug("%s: Waiting complete - attempting to send events - %s" % (self.name, task.name))
 
