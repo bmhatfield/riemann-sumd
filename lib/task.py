@@ -90,11 +90,18 @@ class Task():
         else:
             raise RuntimeError("Task '%s' is locked - cannot start another." % (self.name))
 
-    def send(self):
+    def drain(self):
         self.join()
         self.end_time = time.time()
         self.add_timing(self.end_time - self.start_time)
-        return self.events
+
+        tevents = []
+        while len(self.events) > 0:
+            tevents.append(self.events.pop(0))
+
+        # Now that we've got our events, free the task to run again
+        self.locked = False
+        return tevents
 
 
 class CloudKickTask(Task):
