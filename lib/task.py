@@ -107,19 +107,19 @@ class Task():
 class HTTPJSONTask(Task):
     def __init__(self, config):
         Task.__init__(self, config)
+        self.q = multiprocessing.Queue()
 
-    def request(self, q):
+    def request(self):
         try:
             log.debug("Starting web request to '%s'" % (self.arg))
             resp = requests.get(self.arg)
-            q.put(resp.json(), timeout=(self.ttl * 0.3))
+            self.q.put(resp.json(), timeout=(self.ttl * 0.3))
         except Exception as e:
             log.error("Exception during request method of CloudKickTask '%s'\n%s" % (self.name, str(e)))
 
     def run(self):
         try:
-            self.q = multiprocessing.Queue()
-            self.proc = multiprocessing.Process(target=self.request, args=(self.q))
+            self.proc = multiprocessing.Process(target=self.request)
             self.proc.start()
         except Exception as e:
             log.error("Exception starting CloudKickTask '%s'\n%s" % (self.name, str(e)))
