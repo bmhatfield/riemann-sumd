@@ -35,9 +35,6 @@ import bernhard
 # Task configuration loader library
 import loader
 
-# Task creation library
-import task
-
 # Scheduling library
 import scheduler
 
@@ -91,7 +88,7 @@ def pidfile(directory=options.run_directory, create=False, delete=False):
     if exists:
         with open(pidpath, 'r') as pid:
             pid = int(pid.read())
- 
+
         if create and alive(pid):
             raise IOError("%s already exists!" % (pidpath))
         elif delete:
@@ -168,7 +165,7 @@ def main():
         worker = sender.EventSender(tasks, riemann, enable_threads)
         worker.start()
         workers.append(worker)
-    
+
     # Run main loop
     while True:
         try:
