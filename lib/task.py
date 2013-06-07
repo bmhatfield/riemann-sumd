@@ -7,8 +7,8 @@ import time
 # For determining hostname
 import socket
 
-# Events, for Task
-import events
+# Event
+import event
 
 # Subprocess, for NagiosTask
 import shlex
@@ -132,7 +132,7 @@ class HTTPJSONTask(Task):
             log.debug('CloudKickTask: Processing %s metrics' % (len(json_result['metrics'])))
             for metric in json_result['metrics']:
                 note = metric['note'] if 'note' in metric else self.note
-                event = events.Event()
+                event = event.Event()
                 event.ttl = self.ttl * self.ttl_multiplier
                 event.host = self.host
                 event.tags = self.tags
@@ -218,7 +218,7 @@ class NagiosTask(SubProcessTask):
         try:
             stdout, stderr, returncode = SubProcessTask.join(self)
 
-            event = events.Event()
+            event = event.Event()
             event.service = self.name
             event.ttl = self.ttl * self.ttl_multiplier
             event.host = self.host
@@ -266,7 +266,7 @@ class JSONTask(SubProcessTask):
                         log.error("Event missing field '%s'" % (field))
                         continue
 
-                event = events.Event()
+                event = event.Event()
                 event.ttl = self.ttl * self.ttl_multiplier
                 event.host = self.host
                 event.tags = self.tags
