@@ -1,0 +1,15 @@
+service: "state-changer"
+arg: 'bash -c "exit $((RANDOM % 4))"'
+ttl: 60
+tags: ['flapper', 'notify']
+type: "nagios"
+
+note: "This task flaps"
+
+ttl_multiplier: 3
+
+metric: 'task_goat'
+
+attributes:
+    window-size: 3
+    contact-email: "brian@crashlytics.com"
