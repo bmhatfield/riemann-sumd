@@ -234,8 +234,8 @@ class NagiosTask(SubProcessTask):
                 event.state = 'unknown'
 
             if attributes:
-                if 'metric' in config and config['metric'] in attributes:
-                    metric_key = config['metric']
+                if 'metric' in self.config and self.config['metric'] in attributes:
+                    metric_key = self.config['metric']
                 else:
                     metric_key = attributes.keys()[0]
 
