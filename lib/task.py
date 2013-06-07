@@ -167,7 +167,7 @@ class SubProcessTask(Task):
         try:
             deadline = self.start_time + (self.ttl * 0.5)
             while deadline > time.time():
-                if self.process.poll() == None:
+                if self.process.poll() is None:
                     time.sleep(0.5)
                 else:
                     log.debug("Gathering output from task '%s'" % (self.name))

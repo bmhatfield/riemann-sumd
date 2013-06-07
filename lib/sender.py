@@ -8,6 +8,7 @@ import time
 import logging
 log = logging.getLogger(__name__)
 
+
 class EventSender(threading.Thread):
     def __init__(self, queue, riemann_client, enable_threads):
         log.debug("EventSender created")

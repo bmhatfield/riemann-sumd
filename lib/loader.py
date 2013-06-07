@@ -7,6 +7,7 @@ import task
 import logging
 log = logging.getLogger(__name__)
 
+
 class Loader():
     def __init__(self, path, pattern):
         filepath = os.path.join(path, pattern)
