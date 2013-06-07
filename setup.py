@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from distutils.core import setup
 
-version = "0.1.1"
+version = "0.2.0"
 
 setup(name="riemann-sumd",
       version=version,
@@ -15,5 +15,11 @@ setup(name="riemann-sumd",
                   ('/etc/sumd', ['examples/etc/sumd/sumd.conf']),
                   ('/etc/sumd/tasks.d', ['examples/etc/sumd/tasks.d/simple.task.example']),
                   ('/etc/sumd/tags.d', ['examples/etc/sumd/tags.d/simple.tag.example'])],
-      scripts=["bin/sumd"]
-    )
+      scripts=["bin/sumd"],
+      install_requires=[
+            "pyyaml",
+            "python-daemon",
+            "bernhard>=0.0.5",
+            "requests"
+        ]
+)
