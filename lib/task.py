@@ -259,6 +259,7 @@ class JSONTask(SubProcessTask):
                 results = json.loads(stdout)
             except Exception as e:
                 log.error("Failed to parse JSON. '%s':\n%s" % (self.name, str(e)))
+                return
 
             for result in results:
                 for field in ['service', 'state', 'description', 'metric']:
