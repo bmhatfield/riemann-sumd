@@ -142,6 +142,9 @@ class HTTPJSONTask(Task):
                 event.description = "%s\nWarn threshold: %s, Error threshold: %s" % (note,
                                                                                      metric['warn_threshold'],
                                                                                      metric['error_threshold'])
+                if 'attributes' in metric:
+                    event.attributes = metric['attributes']
+
                 self.events.append(event)
         except Exception as e:
             log.error("Exception joining CloudKickTask '%s'\n%s" % (self.name, str(e)))
