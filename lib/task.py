@@ -148,6 +148,7 @@ class HTTPJSONTask(Task):
                 self.events.append(event)
         except Exception as e:
             log.error("Exception joining CloudKickTask '%s'\n%s" % (self.name, str(e)))
+            task.locked = False
 
 
 class SubProcessTask(Task):
