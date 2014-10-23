@@ -3,8 +3,6 @@ import threading
 
 import socket
 
-import time
-
 import logging
 log = logging.getLogger(__name__)
 
