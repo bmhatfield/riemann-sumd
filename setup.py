@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from distutils.core import setup
 
-version = "0.4.2"
+version = "0.4.3"
 
 setup(name="riemann-sumd",
       version=version,
@@ -19,7 +19,7 @@ setup(name="riemann-sumd",
       install_requires=[
             "pyyaml",
             "python-daemon",
-            "bernhard>=0.0.5",
+            "bernhard>=0.2.2",
             "requests"
         ]
 )

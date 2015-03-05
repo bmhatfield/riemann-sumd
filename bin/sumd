@@ -52,6 +52,11 @@ parser.add_option("--config-dir", dest="config_directory", default="/etc/sumd", 
 parser.add_option("--run-dir", dest="run_directory", default="/var/run", help="Directory for where pidfiles should be placed")
 parser.add_option("--foreground", dest="foreground", action='store_true', default=False, help="Don't daemonize.")
 parser.add_option("--debug", dest="debug", action='store_true', default=False, help="Increase logger verbosity")
+parser.add_option("--use-ssl", dest="use_ssl", action='store_true', default=False, help="Use SSL")
+parser.add_option("--keyfile", dest="keyfile", default="/etc/ssl/client.pkcs8", help="Path to SSL key file")
+parser.add_option("--certfile", dest="certfile", default="/etc/ssl/client.crt", help="Path SSL cert file")
+parser.add_option("--ca-certs", dest="ca_certs", default="/etc/ssl/cacert.pem", help="Path to SSL CA certs file")
+
 (options, args) = parser.parse_args()
 
 # Load global config options. If the command-line options are still at their
@@ -157,7 +162,22 @@ def main():
     enable_threads.set()
 
     # Create riemann client
-    riemann = bernhard.Client(host=options.riemann_host, port=options.riemann_port, transport=bernhard.UDPTransport)
+    if options.use_ssl:
+        log.info("Using TCP over SSL client")
+
+        riemann = bernhard.SSLClient(
+            host=options.riemann_host,
+            port=options.riemann_port,
+            keyfile=options.keyfile,
+            certfile=options.certfile,
+            ca_certs=options.ca_certs)
+    else:
+        log.info("Using UDP client")
+
+        riemann = bernhard.Client(
+            host=options.riemann_host,
+            port=options.riemann_port,
+            transport=bernhard.UDPTransport)
 
     # Create worker pool
     workers = []
