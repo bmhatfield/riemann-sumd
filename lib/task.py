@@ -278,7 +278,7 @@ class JSONTask(SubProcessTask):
                 event.attributes = self.attributes
 
                 if "attributes" in result:
-                    event.attributes.update({self.attrprefix + name: result["attributes"][name] for name in result["attributes"]})
+                    event.attributes.update(dict((self.attrprefix + name, result["attributes"][name]) for name in result["attributes"])
 
                 event.service = result['service']
                 event.state = result['state']
