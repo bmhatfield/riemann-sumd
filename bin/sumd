@@ -127,6 +127,21 @@ def load_configs(schedule):
     for task in tasks:
         schedule.add(task)
 
+def riemann_client():
+    if options.client_key_file != None and options.client_cert_file != None:
+        riemann = bernhard.SSLClient(
+            host=options.riemann_host,
+            port=options.riemann_port,
+            keyfile=options.client_key_file,
+            certfile=options.client_cert_file,
+            ca_certs=options.ca_certs_file)
+    else:
+        riemann = bernhard.Client(
+            host=options.riemann_host,
+            port=options.riemann_port,
+            transport=bernhard.UDPTransport)
+
+    return riemann
 
 def main():
     # Configure logging, must be done inside main to preserve file handling.
@@ -160,28 +175,10 @@ def main():
     enable_threads = threading.Event()
     enable_threads.set()
 
-    # Create riemann client
-    if options.client_key_file != None and options.client_cert_file != None:
-        log.info("Using TCP over SSL client")
-
-        riemann = bernhard.SSLClient(
-            host=options.riemann_host,
-            port=options.riemann_port,
-            keyfile=options.client_key_file,
-            certfile=options.client_cert_file,
-            ca_certs=options.ca_certs_file)
-    else:
-        log.info("Using UDP client")
-
-        riemann = bernhard.Client(
-            host=options.riemann_host,
-            port=options.riemann_port,
-            transport=bernhard.UDPTransport)
-
     # Create worker pool
     workers = []
     for i in range(options.worker_limit):
-        worker = sender.EventSender(tasks, riemann, enable_threads)
+        worker = sender.EventSender(tasks, riemann_client(), enable_threads)
         worker.start()
         workers.append(worker)
 
