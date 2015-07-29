@@ -273,7 +273,7 @@ class JSONTask(SubProcessTask):
 
                 event = Event()
                 event.ttl = self.ttl * self.ttl_multiplier
-                event.host = self.host
+                event.host = result['host'] if 'host' in result else self.host
                 event.tags = self.tags
                 event.attributes = self.attributes
 
