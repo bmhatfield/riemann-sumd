@@ -273,9 +273,13 @@ class JSONTask(SubProcessTask):
 
                 event = Event()
                 event.ttl = self.ttl * self.ttl_multiplier
-                event.host = result['host'] if 'host' in result else self.host
                 event.tags = self.tags
                 event.attributes = self.attributes
+
+                if 'host' in result and result['host'] is not None:
+                    event.host = result['host']
+                else:
+                    event.host = self.host
 
                 if "attributes" in result:
                     event.attributes.update(dict((self.attrprefix + name, result["attributes"][name]) for name in result["attributes"]))
