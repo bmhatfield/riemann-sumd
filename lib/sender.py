@@ -9,7 +9,6 @@ log = logging.getLogger(__name__)
 
 class EventSender(threading.Thread):
     def __init__(self, queue, riemann_client, enable_threads):
-        log.debug("EventSender created")
         threading.Thread.__init__(self)
         self.queue = queue
         self.riemann = riemann_client
@@ -38,13 +37,16 @@ class EventSender(threading.Thread):
                 log.debug("%s: received 'exit' event" % (self.name))
                 break
 
-            log.debug("%s: Waiting for events from '%s'" % (self.name, task.name))
+            try:
+                log.debug("%s: Waiting for events from '%s'" % (self.name, task.name))
 
-            events = task.drain()
+                events = task.drain()
 
-            log.debug("%s: Waiting complete - attempting to send events - %s" % (self.name, task.name))
+                log.debug("%s: Waiting complete - attempting to send events - %s" % (self.name, task.name))
 
-            self.send(events)
+                self.send(events)
+            except Exception as e:
+                log.error("Exception sending events from '%s': %s" % (task.name, str(e)))
 
             log.debug("%s: Events sent - %s" % (self.name, task.name))
             task.locked = False
