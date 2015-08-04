@@ -50,7 +50,7 @@ class TaskLoader(Loader):
                 t = self.task_types[config['type']](config)
 
                 if additional_tags:
-                    t.tags.union(set(additional_tags))
+                    t.tags.update(set(additional_tags))
 
                 tasks.append(t)
             else:
