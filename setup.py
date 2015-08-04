@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from distutils.core import setup
 
-version = "0.4.4"
+version = "0.4.5"
 
 setup(name="riemann-sumd",
       version=version,
