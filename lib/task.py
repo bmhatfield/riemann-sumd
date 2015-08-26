@@ -31,6 +31,9 @@ DEFAULT_MULTIPLIER = 5
 
 SEED_TIMING = 0.5
 
+RIEMANN_CORE_FIELDS = ['host', 'service', 'state', 'time',
+                       'description', 'tags', 'metric', 'ttl']
+
 # Numeric matcher for parsing Nagios performance data
 # create class constant compiled regex, to prevent
 # unecessarily recompiling this regex string.
@@ -255,6 +258,12 @@ class JSONTask(SubProcessTask):
     def __init__(self, config):
         SubProcessTask.__init__(self, config)
 
+    def clean_attribute_name(self, attrname):
+        if attrname.lower() in RIEMANN_CORE_FIELDS:
+            return self.attrprefix + attrname
+
+        return attrname
+
     def join(self):
         try:
             stdout, stderr, returncode = SubProcessTask.join(self)
@@ -282,7 +291,8 @@ class JSONTask(SubProcessTask):
                     event.host = self.host
 
                 if "attributes" in result:
-                    event.attributes.update(dict((self.attrprefix + name, result["attributes"][name]) for name in result["attributes"]))
+                    attributes = result["attributes"]
+                    event.attributes.update(dict((self.clean_attribute_name(key), attributes[key]) for key in attributes))
 
                 event.service = result['service']
                 event.state = result['state']
