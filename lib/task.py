@@ -10,8 +10,10 @@ import socket
 # Event
 from event import Event
 
-# Subprocess, for NagiosTask
+# Subprocess & threads, for SubprocessTask
 import shlex
+import traceback
+import threading
 import subprocess
 
 # Multiprocessing, for PythonTask
@@ -150,7 +152,7 @@ class HTTPJSONTask(Task):
 
                 self.events.append(event)
         except Exception as e:
-            log.error("Exception joining CloudKickTask '%s'\n%s" % (self.name, str(e)))
+            log.error("Exception joining CloudKickTask '%s'\n%s" % (self.name, traceback.format_exc()))
             self.locked = False
 
 
@@ -161,31 +163,40 @@ class SubProcessTask(Task):
         self.raw_command = self.arg
         self.command = shlex.split(self.arg)
         self.process = None
+        self.subprocess = None
+        self.stdout = None
+        self.stderr = None
         self.use_shell = False
         self.attrprefix = 'task_'
 
     def run(self):
         try:
-            self.process = subprocess.Popen(self.command, stdout=subprocess.PIPE, shell=self.use_shell)
+            self.subprocess = threading.Thread(target=self.proc)
+            self.subprocess.start()
         except Exception as e:
             log.error("Exception running task '%s':\n%s" % (self.name, str(e)))
 
+    def proc(self):
+        self.process = subprocess.Popen(self.command, stdout=subprocess.PIPE, shell=self.use_shell)
+        self.stdout, self.sterr = self.process.communicate()
+
     def join(self):
         try:
+            log.debug("Gathering output from task '%s'" % (self.name))
+
             deadline = self.start_time + (self.ttl * 0.5)
-            while deadline > time.time():
-                if self.process.poll() is None:
-                    time.sleep(0.5)
-                else:
-                    log.debug("Gathering output from task '%s'" % (self.name))
-                    stdout, sterr = self.process.communicate()
-                    return stdout, sterr, self.process.returncode
-            else:
+            timeout = deadline - time.time()
+
+            self.subprocess.join(timeout=timeout)
+
+            if self.subprocess.is_alive():
                 log.warning("Deadline expired for task '%s' - force killing" % (self.name))
                 self.process.kill()
                 self.process.wait()
                 log.debug("Subprocess killed for task '%s'" % (self.name))
                 return '', '', -127
+
+            return self.stdout, self.sterr, self.process.returncode
         except Exception as e:
             log.error("Exception joining task '%s':\n%s" % (self.name, str(e)))
 
