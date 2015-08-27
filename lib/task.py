@@ -10,8 +10,9 @@ import socket
 # Event
 from event import Event
 
-# Subprocess, for NagiosTask
+# Subprocess & threads, for SubprocessTask
 import shlex
+import traceback
 import threading
 import subprocess
 
@@ -151,7 +152,7 @@ class HTTPJSONTask(Task):
 
                 self.events.append(event)
         except Exception as e:
-            log.error("Exception joining CloudKickTask '%s'\n%s" % (self.name, str(e)))
+            log.error("Exception joining CloudKickTask '%s'\n%s" % (self.name, traceback.format_exc()))
             self.locked = False
 
 
@@ -170,7 +171,7 @@ class SubProcessTask(Task):
 
     def run(self):
         try:
-            self.subprocess = threading.thread(target=self.proc, args=self)
+            self.subprocess = threading.Thread(target=self.proc)
             self.subprocess.start()
         except Exception as e:
             log.error("Exception running task '%s':\n%s" % (self.name, str(e)))
