@@ -120,14 +120,14 @@ class HTTPJSONTask(Task):
             resp = requests.get(self.arg)
             self.q.put(resp.json(), timeout=(self.ttl * 0.3))
         except Exception as e:
-            log.error("Exception during request method of CloudKickTask '%s'\n%s" % (self.name, str(e)))
+            log.exception("Exception during request method of CloudKickTask '%s'\n%s" % (self.name, str(e)))
 
     def run(self):
         try:
             self.proc = multiprocessing.Process(target=self.request)
             self.proc.start()
         except Exception as e:
-            log.error("Exception starting CloudKickTask '%s'\n%s" % (self.name, str(e)))
+            log.exception("Exception starting CloudKickTask '%s'\n%s" % (self.name, str(e)))
 
     def join(self):
         try:
@@ -152,7 +152,7 @@ class HTTPJSONTask(Task):
 
                 self.events.append(event)
         except Exception as e:
-            log.error("Exception joining CloudKickTask '%s'\n%s" % (self.name, traceback.format_exc()))
+            log.exception("Exception joining CloudKickTask '%s'\n%s" % (self.name, traceback.format_exc()))
             self.locked = False
 
 
@@ -174,11 +174,14 @@ class SubProcessTask(Task):
             self.subprocess = threading.Thread(target=self.proc)
             self.subprocess.start()
         except Exception as e:
-            log.error("Exception running task '%s':\n%s" % (self.name, str(e)))
+            log.exception("Exception running task '%s':\n%s" % (self.name, str(e)))
 
     def proc(self):
-        self.process = subprocess.Popen(self.command, stdout=subprocess.PIPE, shell=self.use_shell)
-        self.stdout, self.sterr = self.process.communicate()
+        try:
+            self.process = subprocess.Popen(self.command, stdout=subprocess.PIPE, shell=self.use_shell)
+            self.stdout, self.stderr = self.process.communicate()
+        except Exception as e:
+            log.exception("Exception running command '%s'\n%s" % (self.arg, str(e)))
 
     def join(self):
         try:
@@ -196,9 +199,9 @@ class SubProcessTask(Task):
                 log.debug("Subprocess killed for task '%s'" % (self.name))
                 return '', '', -127
 
-            return self.stdout, self.sterr, self.process.returncode
+            return self.stdout, self.stderr, self.process.returncode
         except Exception as e:
-            log.error("Exception joining task '%s':\n%s" % (self.name, str(e)))
+            log.exception("Exception joining task '%s':\n%s" % (self.name, str(e)))
 
 
 class NagiosTask(SubProcessTask):
@@ -262,7 +265,7 @@ class NagiosTask(SubProcessTask):
 
             self.events.append(event)
         except Exception as e:
-            log.error("Exception joining task '%s':\n%s" % (self.name, str(e)))
+            log.exception("Exception joining task '%s':\n%s" % (self.name, str(e)))
 
 
 class JSONTask(SubProcessTask):
@@ -311,4 +314,4 @@ class JSONTask(SubProcessTask):
                 event.description = "%s\n%s" % (self.note, result['description'])
                 self.events.append(event)
         except Exception as e:
-            log.error("Exception joining task '%s':\n%s" % (self.name, str(e)))
+            log.exception("Exception joining task '%s':\n%s" % (self.name, str(e)))
