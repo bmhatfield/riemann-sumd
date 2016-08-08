@@ -197,7 +197,17 @@ class SubProcessTask(Task):
                 self.process.kill()
                 self.process.wait()
                 log.debug("Subprocess killed for task '%s'" % (self.name))
-                return '', '', -127
+
+                stdout = "Sumd task timeout of %ds reached, so the task subprocess was killed before completing" % (timeout)
+                if self.stdout is not None:
+                    stdout = self.stdout + "\n^^ End of Output ^^\n" + stdout
+
+                if self.stderr is not None:
+                    stderr = self.stderr
+                else:
+                    stderr = ''
+
+                return stdout, stderr, -127
 
             return self.stdout, self.stderr, self.process.returncode
         except Exception as e:
