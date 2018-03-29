@@ -116,3 +116,10 @@ The JSON structure should contain an entry for each event, as well as metrics an
     ]
 }
 ```
+
+Packaging `riemann-sumd`
+---
+
+You can package `riemann-sumd` for debian using `bdist_deb`:
+
+`python setup.py --command-packages=stdeb.command bdist_deb`
