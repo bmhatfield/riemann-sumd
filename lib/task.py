@@ -180,8 +180,9 @@ class SubProcessTask(Task):
 
     def proc(self):
         try:
-            self.process = subprocess.Popen(self.command, stdout=subprocess.PIPE, shell=self.use_shell, preexec_fn=os.setsid)
+            self.process = subprocess.Popen(self.command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=self.use_shell, preexec_fn=os.setsid)
             self.stdout, self.stderr = self.process.communicate()
+            log.debug("process.communicate() completed for task '%s' (stdout: '%s' returncode: %d)" % (self.name, self.stdout, self.process.returncode))
         except Exception as e:
             log.exception("Exception running command '%s'\n%s" % (self.arg, str(e)))
 
