@@ -38,15 +38,20 @@ import loader
 # Scheduling library
 import scheduler
 
-# Task sending library
+# Event sending library
 import sender
+
+# Task runner library
+import runner
 
 # Parse command line arguments
 parser = OptionParser()
 parser.add_option("--riemann-host", dest="riemann_host", default="localhost", help="Host that Riemann is running on")
 parser.add_option("--riemann-port", dest="riemann_port", default=5555, help="Port that Riemann is running on")
 parser.add_option("--task-limit", dest="task_limit", default=25, help="Limit of concurrent tasks running")
-parser.add_option("--worker-limit", dest="worker_limit", default=5, help="Limit of concurrent event sending worker threads running")
+parser.add_option("--worker-limit", dest="worker_limit", default=5, help="Limit of concurrent task threads running")
+parser.add_option("--sender-queue-size", dest="sender_queue_size", default=100, help="Number of Riemann events that can be queued up for sending.")
+parser.add_option("--sender-limit", dest="sender_limit", default=1, help="Limit of concurrent event sending threads running")
 parser.add_option("--log-dir", dest="log_directory", default="/var/log", help="Directory for where logs should end up")
 parser.add_option("--config-dir", dest="config_directory", default="/etc/sumd", help="Root path where tasks.d and tags.d can be found")
 parser.add_option("--run-dir", dest="run_directory", default="/var/run", help="Directory for where pidfiles should be placed")
@@ -172,15 +177,23 @@ def main():
 
     # Create task queue for worker threads, enable thread processing
     tasks = Queue.Queue(options.task_limit)
+    event_queue = Queue.Queue(options.sender_queue_size)
     enable_threads = threading.Event()
     enable_threads.set()
 
-    # Create worker pool
+    # Create task runner pool
     workers = []
     for i in range(options.worker_limit):
-        worker = sender.EventSender(tasks, riemann_client(), enable_threads)
+        worker = runner.TaskRunner(tasks, event_queue, enable_threads)
         worker.start()
         workers.append(worker)
+
+    # Create sender pool
+    senders = []
+    for i in range(options.sender_limit):
+        event_sender = sender.EventSender(event_queue, riemann_client(), enable_threads)
+        event_sender.start()
+        senders.append(event_sender)
 
     # Run main loop
     while True:
