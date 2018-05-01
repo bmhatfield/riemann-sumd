@@ -28,7 +28,7 @@ class EventSender(threading.Thread):
             try:
                 log.debug("Sending event: %s" % (event.dict()))
                 self.riemann.send(event.dict())
-            except socket.error:
+            except Exception as e:
                 log.error("Unable to send event '%s' to %s:%s" % (event.service, self.riemann.host, self.riemann.port))
 
             self.queue.task_done()
