@@ -20,6 +20,10 @@ class EventSender(threading.Thread):
             log.debug("EventSender %s: waiting for an event..." % (self.name))
             event = self.queue.get(block=True)
 
+            if event == "exit":
+                log.debug("%s: received 'exit' event" % (self.name))
+                break
+
             try:
                 log.debug("Sending event: %s" % (event.dict()))
                 self.riemann.send(event.dict())
