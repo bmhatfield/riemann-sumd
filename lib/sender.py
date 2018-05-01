@@ -17,13 +17,18 @@ class EventSender(threading.Thread):
 
     def run(self):
         while self.enable_threads:
-            log.debug("EventSender %s: waiting for an event..." % (self.name))
+            log.debug("EventRunner - Waiting for an event...")
+
             event = self.queue.get(block=True)
+
+            if event == "exit":
+                log.debug("Received 'exit' event")
+                break
 
             try:
                 log.debug("Sending event: %s" % (event.dict()))
                 self.riemann.send(event.dict())
-            except socket.error:
-                log.error("Unable to send event '%s' to %s:%s" % (event.service, self.riemann.host, self.riemann.port))
+            except Exception as e:
+                log.error("Unable to send event '%s' to %s:%s - %s" % (event.service, self.riemann.host, self.riemann.port, str(e)))
 
             self.queue.task_done()

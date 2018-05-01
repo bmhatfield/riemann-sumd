@@ -162,7 +162,7 @@ def main():
     else:
         log_output = logging.FileHandler(os.path.join(options.log_directory, 'sumd.log'))
 
-    log_output.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+    log_output.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(threadName)s - %(name)s - %(message)s'))
     log.addHandler(log_output)
 
     if not options.foreground:
@@ -214,9 +214,12 @@ def main():
             # This enables clean thread shutdown when an 'exit' event is sent
             # to the main loop. Without this, the program would not properly
             # exit on a quit signal.
+            log.warning("Recieved exit. Shutting down.")
             enable_threads.clear()
             for i in range(len(workers)):
                 tasks.put("exit")
+            for i in range(len(senders)):
+                event_queue.put("exit")
             break
 
 
