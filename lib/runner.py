@@ -26,24 +26,24 @@ class TaskRunner(threading.Thread):
 
     def run(self):
         while self.enable_threads:
-            log.debug("EventSender %s: waiting for a task..." % (self.name))
+            log.debug("TaskRunner - waiting for a task...")
             task = self.task_queue.get(block=True)
 
             if task == "exit":
-                log.debug("%s: received 'exit' event" % (self.name))
+                log.debug("Received 'exit' event")
                 break
 
             try:
-                log.debug("%s: Waiting for events from '%s'" % (self.name, task.name))
+                log.debug("Waiting for events from '%s'" % (task.name))
 
                 events = task.drain()
 
-                log.debug("%s: Waiting complete - attempting to send events - %s" % (self.name, task.name))
+                log.debug("Waiting complete - attempting to send events - %s" % (task.name))
 
                 self.enqueue_events(events)
             except Exception as e:
                 log.error("Exception sending events from '%s': %s" % (task.name, str(e)))
 
-            log.debug("%s: Events sent - %s" % (self.name, task.name))
+            log.debug("Events sent - %s" % (task.name))
             task.locked = False
             self.task_queue.task_done()

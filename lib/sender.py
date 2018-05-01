@@ -17,11 +17,12 @@ class EventSender(threading.Thread):
 
     def run(self):
         while self.enable_threads:
-            log.debug("EventSender %s: waiting for an event..." % (self.name))
+            log.debug("EventRunner - Waiting for an event...")
+
             event = self.queue.get(block=True)
 
             if event == "exit":
-                log.debug("%s: received 'exit' event" % (self.name))
+                log.debug("Received 'exit' event")
                 break
 
             try:

@@ -162,7 +162,7 @@ def main():
     else:
         log_output = logging.FileHandler(os.path.join(options.log_directory, 'sumd.log'))
 
-    log_output.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+    log_output.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(threadName)s - %(name)s - %(message)s'))
     log.addHandler(log_output)
 
     if not options.foreground:
