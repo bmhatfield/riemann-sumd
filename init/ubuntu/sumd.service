@@ -1,0 +1,9 @@
+[Unit]
+Description=riemann-sumd - a Python agent for scheduling event generating processes and sending the results to Riemann
+
+[Service]
+WorkingDirectory=/opt/sumd
+ExecStart=/opt/sumd/bin/sumd
+
+[Install]
+WantedBy=multi-user.target
