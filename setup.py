@@ -5,7 +5,7 @@ import platform
 version = "0.7.2"
 
 distro = platform.dist()[0]
-distro_major_version = platform.dist()[1].split('.')[0]
+distro_major_version = int(platform.dist()[1].split('.')[0])
 
 data_files=[('/etc/sumd', ['examples/etc/sumd/sumd.conf']),
             ('/etc/sumd/tasks.d', ['examples/etc/sumd/tasks.d/simple.task.example']),
